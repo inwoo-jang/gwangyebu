@@ -1,5 +1,4 @@
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
 import { OAuthButtons } from "./oauth-buttons"
 import { AuthForm } from "./auth-form"
 
@@ -46,23 +45,6 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       </div>
 
       <OAuthButtons />
-
-      <div className="relative my-1 text-center text-xs text-muted-foreground">
-        <span className="relative z-10 bg-background px-2">또는</span>
-        <span className="absolute left-0 top-1/2 h-px w-full bg-border" />
-      </div>
-
-      <form
-        action={`/api/guest/start?next=${encodeURIComponent(next)}`}
-        method="post"
-      >
-        <Button type="submit" variant="secondary" className="w-full">
-          게스트로 시작하기
-        </Button>
-        <p className="mt-2 text-center text-xs text-muted-foreground">
-          데이터는 이 브라우저에만 저장됩니다.
-        </p>
-      </form>
 
       <p className="text-center text-xs text-muted-foreground">
         가입 시{" "}
