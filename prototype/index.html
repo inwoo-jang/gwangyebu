@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover,user-scalable=no" />
+<title>관계부 — HTML 프로토타입</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
+<script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      fontFamily: {
+        sans: ['"Pretendard Variable"', 'Pretendard', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+      },
+      colors: {
+        background: 'hsl(var(--background) / <alpha-value>)',
+        foreground: 'hsl(var(--foreground) / <alpha-value>)',
+        card: 'hsl(var(--card) / <alpha-value>)',
+        'card-foreground': 'hsl(var(--card-foreground) / <alpha-value>)',
+        primary: { DEFAULT: 'hsl(var(--primary) / <alpha-value>)', foreground: 'hsl(var(--primary-foreground) / <alpha-value>)' },
+        secondary: { DEFAULT: 'hsl(var(--secondary) / <alpha-value>)', foreground: 'hsl(var(--secondary-foreground) / <alpha-value>)' },
+        muted: { DEFAULT: 'hsl(var(--muted) / <alpha-value>)', foreground: 'hsl(var(--muted-foreground) / <alpha-value>)' },
+        accent: { DEFAULT: 'hsl(var(--accent) / <alpha-value>)', foreground: 'hsl(var(--accent-foreground) / <alpha-value>)' },
+        destructive: { DEFAULT: 'hsl(var(--destructive) / <alpha-value>)', foreground: 'hsl(var(--destructive-foreground) / <alpha-value>)' },
+        success: 'hsl(var(--success) / <alpha-value>)',
+        warning: 'hsl(var(--warning) / <alpha-value>)',
+        border: 'hsl(var(--border) / <alpha-value>)',
+        input: 'hsl(var(--input) / <alpha-value>)',
+        ring: 'hsl(var(--ring) / <alpha-value>)',
+      },
+      borderRadius: { lg: 'var(--radius)', md: 'calc(var(--radius) - 4px)', sm: 'calc(var(--radius) - 6px)' },
+      boxShadow: { soft: '0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(20,14,12,0.04)' },
+    },
+  },
+}
+</script>
+<style>
+  :root {
+    --background: 30 20% 99%;
+    --foreground: 20 14% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 20 14% 12%;
+    --primary: 12 75% 58%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 30 30% 94%;
+    --secondary-foreground: 20 14% 18%;
+    --muted: 30 12% 96%;
+    --muted-foreground: 20 8% 42%;
+    --accent: 28 60% 92%;
+    --accent-foreground: 20 14% 18%;
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 145 35% 45%;
+    --warning: 38 78% 50%;
+    --border: 30 12% 88%;
+    --input: 30 12% 88%;
+    --ring: 12 75% 58%;
+    --radius: 0.75rem;
+    --tag-1: 30 60% 70%;
+    --tag-2: 80 55% 65%;
+    --tag-3: 145 30% 60%;
+    --tag-4: 200 35% 60%;
+    --tag-5: 270 35% 70%;
+    --tag-6: 320 35% 72%;
+    --tag-7: 0 35% 72%;
+    --tag-8: 80 25% 78%;
+  }
+  .dark {
+    --background: 20 14% 6%;
+    --foreground: 30 10% 96%;
+    --card: 20 14% 9%;
+    --card-foreground: 30 10% 96%;
+    --primary: 12 78% 64%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 20 8% 18%;
+    --secondary-foreground: 30 10% 92%;
+    --muted: 20 6% 14%;
+    --muted-foreground: 30 6% 64%;
+    --accent: 20 14% 22%;
+    --accent-foreground: 30 10% 92%;
+    --destructive: 0 65% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 145 35% 55%;
+    --warning: 38 80% 60%;
+    --border: 20 8% 22%;
+    --input: 20 8% 22%;
+    --ring: 12 78% 64%;
+  }
+  html, body { height: 100%; }
+  body {
+    font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, sans-serif;
+    background-color: hsl(var(--muted));
+    color: hsl(var(--foreground));
+    word-break: keep-all;
+    line-height: 1.6;
+  }
+  .phone-frame {
+    width: 100%;
+    max-width: 420px;
+    min-height: 100dvh;
+    margin: 0 auto;
+    background: hsl(var(--background));
+    box-shadow: 0 30px 80px rgba(0,0,0,0.08);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+  @media (min-width: 640px) {
+    .phone-frame {
+      min-height: 844px;
+      margin: 24px auto;
+      border-radius: 32px;
+      overflow: hidden;
+      border: 1px solid hsl(var(--border));
+    }
+  }
+  .screen { display: none; flex: 1; flex-direction: column; }
+  .screen.active { display: flex; }
+  .scroll-area { flex: 1; overflow-y: auto; padding-bottom: 84px; }
+  .bottom-nav { position: sticky; bottom: 0; }
+  .tap { transition: transform .15s ease, background-color .2s ease; }
+  .tap:active { transform: scale(0.97); }
+</style>
+</head>
+<body>
+
+<div class="phone-frame" id="app">
+
+  <!-- ========== LOGIN ========== -->
+  <section class="screen" data-screen="login">
+    <div class="scroll-area px-6 py-12 flex flex-col justify-center" style="padding-bottom: 24px;">
+      <div class="text-center space-y-2">
+        <p class="text-3xl">💌</p>
+        <h1 class="text-2xl font-bold tracking-tight">관계부</h1>
+        <p class="text-sm text-muted-foreground">잊지 않게, 흐지부지되지 않게.<br>AI 인맥 비서와 함께 시작하세요.</p>
+      </div>
+
+      <form class="mt-8 space-y-3" onsubmit="event.preventDefault(); go('home')">
+        <label class="block text-sm font-medium" for="email">이메일</label>
+        <input id="email" type="email" placeholder="you@example.com"
+               class="w-full rounded-md border border-input bg-card px-3 h-10 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring" />
+        <button class="w-full h-10 rounded-md bg-primary text-primary-foreground text-sm font-medium tap">로그인 링크 받기</button>
+      </form>
+
+      <div class="relative my-5 text-center text-xs text-muted-foreground">
+        <span class="relative z-10 bg-background px-2">또는</span>
+        <span class="absolute left-0 top-1/2 h-px w-full bg-border"></span>
+      </div>
+
+      <div class="space-y-2">
+        <button class="w-full h-10 rounded-md border border-border bg-card text-sm font-medium tap" onclick="go('home')">Google로 계속하기</button>
+        <button class="w-full h-10 rounded-md text-sm font-medium tap" style="background:#FEE500;color:#181600;" onclick="go('home')">카카오로 계속하기</button>
+      </div>
+
+      <div class="relative my-5 text-center text-xs text-muted-foreground">
+        <span class="relative z-10 bg-background px-2">또는</span>
+        <span class="absolute left-0 top-1/2 h-px w-full bg-border"></span>
+      </div>
+
+      <button onclick="go('home')" class="w-full h-10 rounded-md bg-secondary text-secondary-foreground text-sm font-medium tap">게스트로 시작하기</button>
+      <p class="mt-2 text-center text-xs text-muted-foreground">데이터는 이 브라우저에만 저장됩니다.</p>
+
+      <p class="mt-8 text-center text-[11px] text-muted-foreground">가입 시 이용약관 및 개인정보처리방침에 동의한 것으로 간주됩니다.</p>
+    </div>
+  </section>
+
+  <!-- ========== HOME ========== -->
+  <section class="screen" data-screen="home">
+    <header class="sticky top-0 z-10 flex items-center justify-between px-4 h-14 border-b border-border bg-background/90 backdrop-blur">
+      <h1 class="text-lg font-bold">관계부</h1>
+      <span class="inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-[11px] font-medium text-secondary-foreground">게스트 모드</span>
+    </header>
+    <div class="scroll-area px-4 pt-4">
+      <section class="mb-5">
+        <p class="text-sm text-muted-foreground">지수님,</p>
+        <h2 class="mt-1 text-xl font-semibold">오늘은 누구에게 안부 전해볼까요?</h2>
+      </section>
+
+      <section class="mb-5 rounded-2xl border p-4 shadow-soft" style="background:linear-gradient(135deg, hsl(var(--primary)/0.10), hsl(var(--accent)/0.4));border-color: hsl(var(--primary)/0.3);">
+        <div class="flex items-center gap-2 text-primary">
+          <span>✨</span>
+          <h3 class="text-sm font-semibold">AI 추천 (게스트 데모)</h3>
+        </div>
+        <p class="mt-2 text-sm text-foreground/80">아래 5명 중 <b>이민호</b> 님과는 45일째 연락이 없어요. 지난 생일에 받은 선물도 있고요. 가볍게 안부 한 통 어떨까요?</p>
+        <div class="mt-3 flex gap-2">
+          <button class="rounded-md border border-border bg-card px-3 h-8 text-xs tap" onclick="go('person', '2')">자세히 보기</button>
+          <button class="rounded-md bg-primary text-primary-foreground px-3 h-8 text-xs tap" onclick="alert('카톡 열기 (목업)')">💬 연락하기</button>
+        </div>
+      </section>
+
+      <section class="mb-5">
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="text-sm font-semibold">다가오는 리마인더</h2>
+          <a class="text-xs text-primary cursor-pointer" onclick="go('reminders')">모두 보기</a>
+        </div>
+        <div id="home-reminders" class="space-y-2"></div>
+      </section>
+
+      <section>
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="text-sm font-semibold">인물 (<span id="home-count"></span>명)</h2>
+          <button class="text-xs text-primary tap" onclick="go('person-new')">+ 추가</button>
+        </div>
+        <div id="home-persons" class="space-y-3"></div>
+      </section>
+    </div>
+    <nav class="bottom-nav border-t border-border bg-background"></nav>
+  </section>
+
+  <!-- ========== PERSON DETAIL ========== -->
+  <section class="screen" data-screen="person">
+    <header class="sticky top-0 z-10 flex items-center justify-between px-2 h-14 border-b border-border bg-background/90 backdrop-blur">
+      <button class="h-10 w-10 inline-flex items-center justify-center text-xl tap" onclick="go('home')">‹</button>
+      <h1 class="text-base font-semibold" id="pd-title">인물</h1>
+      <button class="h-10 w-10 inline-flex items-center justify-center text-base tap" onclick="alert('편집 (목업)')">✎</button>
+    </header>
+    <div class="scroll-area px-4 pt-4" id="pd-body"></div>
+    <nav class="bottom-nav border-t border-border bg-background"></nav>
+  </section>
+
+  <!-- ========== PERSON NEW (form mockup) ========== -->
+  <section class="screen" data-screen="person-new">
+    <header class="sticky top-0 z-10 flex items-center justify-between px-2 h-14 border-b border-border bg-background/90 backdrop-blur">
+      <button class="h-10 w-10 inline-flex items-center justify-center text-xl tap" onclick="go('home')">‹</button>
+      <h1 class="text-base font-semibold">새 인물 추가</h1>
+      <span class="w-10"></span>
+    </header>
+    <div class="scroll-area px-4 pt-4">
+      <p class="mb-4 text-sm text-muted-foreground">이름만 있으면 충분해요. 나머지는 나중에 채워도 OK!</p>
+      <form class="space-y-5" onsubmit="event.preventDefault(); alert('저장됨 (목업)'); go('home');">
+        <div class="space-y-1.5">
+          <label class="text-sm font-medium" for="np-name">이름 *</label>
+          <input id="np-name" placeholder="홍길동" class="w-full rounded-md border border-input bg-card px-3 h-10 text-sm" />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div class="space-y-1.5">
+            <label class="text-sm font-medium">관계유형</label>
+            <select class="w-full rounded-md border border-input bg-card px-3 h-10 text-sm">
+              <option>친구</option><option>가족</option><option>직장</option><option>거래처</option><option>지인</option><option>기타</option>
+            </select>
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-sm font-medium">MBTI</label>
+            <select class="w-full rounded-md border border-input bg-card px-3 h-10 text-sm">
+              <option>선택 안함</option><option>ENFP</option><option>INFJ</option><option>INTJ</option><option>ESTP</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="text-sm font-medium block mb-1.5">생일</label>
+          <div class="grid grid-cols-3 gap-2">
+            <input placeholder="YYYY" class="rounded-md border border-input bg-card px-3 h-10 text-sm" />
+            <input placeholder="MM" class="rounded-md border border-input bg-card px-3 h-10 text-sm" />
+            <input placeholder="DD" class="rounded-md border border-input bg-card px-3 h-10 text-sm" />
+          </div>
+        </div>
+        <div class="space-y-1.5">
+          <label class="text-sm font-medium">알게 된 경로</label>
+          <input placeholder="예: 동아리에서 만남" class="w-full rounded-md border border-input bg-card px-3 h-10 text-sm" />
+        </div>
+        <div class="space-y-1.5">
+          <label class="text-sm font-medium">태그 (최대 10개)</label>
+          <div class="flex flex-wrap gap-1.5">
+            <span class="rounded-full px-2.5 py-1 text-xs cursor-pointer" style="background:hsl(var(--tag-1)/0.4)">친구</span>
+            <span class="rounded-full px-2.5 py-1 text-xs cursor-pointer" style="background:hsl(var(--tag-2)/0.4)">직장</span>
+            <span class="rounded-full px-2.5 py-1 text-xs cursor-pointer" style="background:hsl(var(--tag-3)/0.4)">가족</span>
+            <span class="rounded-full px-2.5 py-1 text-xs cursor-pointer" style="background:hsl(var(--tag-4)/0.4)">동아리</span>
+          </div>
+        </div>
+        <div class="space-y-1.5">
+          <label class="text-sm font-medium">메모</label>
+          <textarea rows="4" placeholder="자유로운 메모 (취향·기념일·인상 등)" class="w-full rounded-md border border-input bg-card px-3 py-2 text-sm"></textarea>
+        </div>
+        <div class="flex gap-2 pt-2">
+          <button type="button" class="rounded-md px-4 h-10 text-sm tap" onclick="go('home')">취소</button>
+          <button class="flex-1 rounded-md bg-primary text-primary-foreground h-10 text-sm font-medium tap">추가</button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- ========== REMINDERS ========== -->
+  <section class="screen" data-screen="reminders">
+    <header class="sticky top-0 z-10 flex items-center justify-between px-4 h-14 border-b border-border bg-background/90 backdrop-blur">
+      <h1 class="text-lg font-bold">리마인더</h1>
+    </header>
+    <div class="scroll-area px-4 pt-4 space-y-6" id="rem-body"></div>
+    <nav class="bottom-nav border-t border-border bg-background"></nav>
+  </section>
+
+  <!-- ========== SEARCH ========== -->
+  <section class="screen" data-screen="search">
+    <header class="sticky top-0 z-10 flex items-center justify-between px-4 h-14 border-b border-border bg-background/90 backdrop-blur">
+      <h1 class="text-lg font-bold">검색</h1>
+    </header>
+    <div class="scroll-area px-4 pt-4 space-y-4">
+      <input id="search-input" type="search" placeholder="이름으로 검색" oninput="renderSearch()"
+             class="w-full rounded-md border border-input bg-card px-3 h-10 text-sm" />
+      <div id="search-types" class="flex flex-wrap gap-1.5"></div>
+      <div id="search-results" class="space-y-3"></div>
+    </div>
+    <nav class="bottom-nav border-t border-border bg-background"></nav>
+  </section>
+
+  <!-- ========== SETTINGS ========== -->
+  <section class="screen" data-screen="settings">
+    <header class="sticky top-0 z-10 flex items-center justify-between px-4 h-14 border-b border-border bg-background/90 backdrop-blur">
+      <h1 class="text-lg font-bold">설정</h1>
+      <span class="inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-[11px] font-medium text-secondary-foreground">게스트 모드</span>
+    </header>
+    <div class="scroll-area px-4 pt-4 space-y-5">
+      <section class="rounded-xl border border-border bg-card p-4 space-y-3">
+        <h2 class="text-sm font-semibold">프로필</h2>
+        <label class="text-sm font-medium" for="dn">표시 이름</label>
+        <div class="flex gap-2">
+          <input id="dn" value="지수" class="flex-1 rounded-md border border-input bg-card px-3 h-10 text-sm" />
+          <button class="rounded-md bg-primary text-primary-foreground px-3 h-10 text-sm tap">저장</button>
+        </div>
+      </section>
+
+      <section class="rounded-xl border border-border bg-card p-4 space-y-3">
+        <h2 class="text-sm font-semibold">AI 프로바이더</h2>
+        <select class="w-full rounded-md border border-input bg-card px-3 h-10 text-sm">
+          <option>자동 (사용 가능한 키)</option>
+          <option>Claude (Anthropic)</option>
+          <option>Gemini (Google)</option>
+          <option selected>규칙 기반 (오프라인)</option>
+        </select>
+        <p class="text-xs text-muted-foreground">게스트 모드의 관계 분석은 기본적으로 규칙 기반(오프라인)으로 동작해요.</p>
+      </section>
+
+      <section class="rounded-xl border border-border bg-card p-4 space-y-3">
+        <h2 class="text-sm font-semibold">화면 테마</h2>
+        <div class="flex gap-2">
+          <button class="flex-1 rounded-md border border-border bg-card h-10 text-sm tap" onclick="setTheme('light')">라이트</button>
+          <button class="flex-1 rounded-md border border-border bg-card h-10 text-sm tap" onclick="setTheme('dark')">다크</button>
+          <button class="flex-1 rounded-md border border-border bg-card h-10 text-sm tap" onclick="setTheme('system')">시스템</button>
+        </div>
+      </section>
+
+      <section class="rounded-xl border border-border bg-card p-4 space-y-3">
+        <h2 class="text-sm font-semibold">데이터 관리</h2>
+        <button class="w-full rounded-md border border-border bg-card h-10 text-sm tap" onclick="exportJson()">JSON으로 내보내기</button>
+        <button class="w-full rounded-md border border-border bg-card h-10 text-sm tap text-destructive" onclick="if(confirm('초기화할까요?')) location.reload()">데이터 초기화</button>
+      </section>
+
+      <section class="rounded-xl border border-border bg-card p-4 space-y-3">
+        <h2 class="text-sm font-semibold">계정</h2>
+        <button class="w-full rounded-md border border-border bg-card h-10 text-sm tap text-destructive" onclick="go('login')">로그아웃 / 게스트 종료</button>
+      </section>
+
+      <p class="pb-4 text-center text-xs text-muted-foreground">관계부 v0.1 · HTML 프로토타입</p>
+    </div>
+    <nav class="bottom-nav border-t border-border bg-background"></nav>
+  </section>
+
+</div>
+
+<!-- ========== Sample Data + JS ========== -->
+<script>
+const TYPE_LABEL = { family: '가족', friend: '친구', colleague: '직장', client: '거래처', acquaintance: '지인', etc: '기타' };
+const CHANNEL = { kakao: { label: '카톡', icon: '💛' }, phone: { label: '전화', icon: '📞' }, sms: { label: '문자', icon: '💬' }, email: { label: '이메일', icon: '✉️' }, inperson: { label: '직접 만남', icon: '☕️' }, other: { label: '기타', icon: '🔗' } };
+
+const PERSONS = [
+  {
+    id: '1', name: '김지수', relationship_type: 'friend',
+    mbti: 'ENFP', birth: '1995.05.12', how_we_met: '대학교 동아리',
+    food: '매운 음식 못 먹음', memo: '최근 이직 준비 중. 책 추천해주기로 함.',
+    interval: 30, last_at: addDays(-12), score: 78,
+    tags: [{ id: 't1', name: '친구', color: 1 }, { id: 't4', name: '동아리', color: 4 }],
+    contacts: [
+      { ts: addDays(-12), channel: 'kakao', dir: 'outbound', memo: '안부 연락' },
+      { ts: addDays(-30), channel: 'inperson', dir: 'unknown', memo: '강남에서 점심' },
+      { ts: addDays(-65), channel: 'phone', dir: 'inbound', memo: '이직 고민 통화 30분' },
+    ],
+    notes: [
+      { ts: addDays(-20), body: '다음에 만날 때 추천한 책 빌려주기로 함' },
+      { ts: addDays(-66), body: '회사 그만두고 싶다고 함. 응원만 해주기.' },
+    ],
+  },
+  {
+    id: '2', name: '이민호', relationship_type: 'colleague',
+    mbti: 'ISTJ', birth: '1990.11.03', how_we_met: '이전 직장 동료',
+    food: null, memo: null, interval: 60, last_at: addDays(-45), score: 35,
+    tags: [{ id: 't2', name: '직장', color: 2 }],
+    contacts: [
+      { ts: addDays(-45), channel: 'phone', dir: 'inbound', memo: '프로젝트 문의' },
+      { ts: addDays(-130), channel: 'kakao', dir: 'outbound', memo: '생일 축하' },
+    ],
+    notes: [{ ts: addDays(-130), body: '생일에 와인 한 병 보내드림' }],
+  },
+  {
+    id: '3', name: '엄마', relationship_type: 'family',
+    mbti: null, birth: '1965.03.22', how_we_met: null,
+    food: null, memo: '건강식 좋아하심. 등산 좋아하심.',
+    interval: 7, last_at: addDays(-3), score: 92,
+    tags: [{ id: 't3', name: '가족', color: 3 }],
+    contacts: [
+      { ts: addDays(-3), channel: 'phone', dir: 'outbound', memo: null },
+      { ts: addDays(-10), channel: 'inperson', dir: 'unknown', memo: '집에서 저녁' },
+      { ts: addDays(-17), channel: 'phone', dir: 'inbound', memo: null },
+    ],
+    notes: [],
+  },
+  {
+    id: '4', name: '박서연', relationship_type: 'client',
+    mbti: 'INTJ', birth: '1988.08.15', how_we_met: '이전 프로젝트 클라이언트',
+    food: '비건', memo: '디자인 컨설팅 단가 시간당 12만원',
+    interval: 90, last_at: addDays(-72), score: 56,
+    tags: [{ id: 't5', name: '거래처', color: 5 }, { id: 't6', name: '디자인', color: 6 }],
+    contacts: [
+      { ts: addDays(-72), channel: 'email', dir: 'outbound', memo: '인보이스 발송' },
+      { ts: addDays(-95), channel: 'inperson', dir: 'unknown', memo: '최종 미팅' },
+    ],
+    notes: [{ ts: addDays(-95), body: '다음 분기 협업 가능성 검토 중' }],
+  },
+  {
+    id: '5', name: '최우진', relationship_type: 'acquaintance',
+    mbti: 'ESTP', birth: null, how_we_met: '러닝 크루',
+    food: null, memo: '주말 러닝 같이 가끔 함.',
+    interval: 60, last_at: addDays(-22), score: 64,
+    tags: [{ id: 't7', name: '운동', color: 7 }],
+    contacts: [{ ts: addDays(-22), channel: 'kakao', dir: 'outbound', memo: '주말 한강 러닝' }],
+    notes: [],
+  },
+];
+
+const REMINDERS = [
+  { id: 'r1', person_id: '2', type: 'followup', scheduled_at: addDays(-1), message: '오랜만에 안부 전하기', status: 'active' },
+  { id: 'r2', person_id: '3', type: 'birthday', scheduled_at: addDays(2), message: '엄마 생신 챙기기 (양력 환산)', status: 'active' },
+  { id: 'r3', person_id: '1', type: 'followup', scheduled_at: addDays(5), message: '책 빌려주기로 한 거 챙기기', status: 'active' },
+  { id: 'r4', person_id: '4', type: 'followup', scheduled_at: addDays(20), message: '다음 분기 미팅 잡기', status: 'active' },
+  { id: 'r5', person_id: '5', type: 'event', scheduled_at: addDays(-5), message: '러닝 일정 잡기', status: 'snoozed' },
+];
+
+function addDays(n) { return new Date(Date.now() + n * 86400000).toISOString(); }
+function relativeKo(iso) {
+  const days = Math.round((Date.now() - new Date(iso).getTime()) / 86400000);
+  if (days === 0) return '오늘';
+  if (days === 1) return '어제';
+  if (days === -1) return '내일';
+  if (days < 0) return `${-days}일 후`;
+  if (days < 7) return `${days}일 전`;
+  if (days < 30) return `${Math.floor(days/7)}주 전`;
+  if (days < 365) return `${Math.floor(days/30)}개월 전`;
+  return `${Math.floor(days/365)}년 전`;
+}
+function fullDateKo(iso) {
+  const d = new Date(iso);
+  return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+}
+function timeKo(iso) {
+  const d = new Date(iso);
+  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+function bandFor(score) {
+  if (score >= 70) return { label: '양호', color: 'success', toneClass: 'text-success' };
+  if (score >= 40) return { label: '보통', color: 'warning', toneClass: 'text-warning' };
+  return { label: '주의', color: 'destructive', toneClass: 'text-destructive' };
+}
+
+// ========== Routing ==========
+function go(screen, arg) {
+  const url = new URL(location.href);
+  url.hash = arg ? `${screen}/${arg}` : screen;
+  history.pushState({}, '', url);
+  render();
+}
+window.addEventListener('popstate', render);
+
+function currentRoute() {
+  const h = location.hash.replace(/^#/, '') || 'login';
+  const [screen, arg] = h.split('/');
+  return { screen, arg };
+}
+
+function render() {
+  const { screen, arg } = currentRoute();
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const target = document.querySelector(`[data-screen="${screen}"]`) || document.querySelector('[data-screen="login"]');
+  target.classList.add('active');
+  // build bottom navs (each screen has its own placeholder)
+  document.querySelectorAll('.bottom-nav').forEach(nav => {
+    nav.innerHTML = bottomNavHTML(screen);
+  });
+  if (screen === 'home') renderHome();
+  if (screen === 'reminders') renderReminders();
+  if (screen === 'search') renderSearch();
+  if (screen === 'person') renderPerson(arg);
+  window.scrollTo(0, 0);
+}
+
+function bottomNavHTML(active) {
+  const tabs = [
+    { id: 'home', icon: '🏠', label: '홈' },
+    { id: 'search', icon: '🔍', label: '검색' },
+    { id: 'add', icon: '＋', label: '', primary: true, target: 'person-new' },
+    { id: 'reminders', icon: '🔔', label: '리마인더' },
+    { id: 'settings', icon: '⚙️', label: '설정' },
+  ];
+  return `<div class="grid grid-cols-5 h-16 max-w-[420px] mx-auto">${tabs.map(t => {
+    const isActive = (t.target ?? t.id) === active;
+    if (t.primary) {
+      return `<button class="flex items-center justify-center" onclick="go('${t.target}')">
+        <span class="grid place-items-center w-12 h-12 rounded-full bg-primary text-primary-foreground text-xl shadow-soft tap" aria-label="추가">${t.icon}</span>
+      </button>`;
+    }
+    return `<button class="flex flex-col items-center justify-center text-[11px] gap-0.5 ${isActive ? 'text-primary' : 'text-muted-foreground'}" onclick="go('${t.id}')">
+      <span class="text-lg leading-none">${t.icon}</span>
+      <span>${t.label}</span>
+    </button>`;
+  }).join('')}</div>`;
+}
+
+// ========== Home ==========
+function renderHome() {
+  document.getElementById('home-count').textContent = PERSONS.length;
+  const sortedPersons = [...PERSONS].sort((a, b) => new Date(a.last_at) - new Date(b.last_at));
+  document.getElementById('home-persons').innerHTML = sortedPersons.map(personCard).join('');
+
+  const now = Date.now();
+  const upcoming = REMINDERS
+    .filter(r => r.status !== 'done')
+    .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at))
+    .slice(0, 3);
+  document.getElementById('home-reminders').innerHTML = upcoming.length
+    ? upcoming.map(reminderCard).join('')
+    : '<div class="rounded-xl border border-dashed border-border p-4 text-center text-sm text-muted-foreground">예정된 리마인더가 없어요.</div>';
+}
+
+function personCard(p) {
+  const b = bandFor(p.score);
+  const days = Math.round((Date.now() - new Date(p.last_at).getTime()) / 86400000);
+  const variantClass = days > 60 ? 'border-l-4 border-l-warning'
+    : (days > 30 && p.score < 40) ? 'border-l-4 border-l-destructive'
+    : '';
+  const lastLabel = p.last_at ? `${relativeKo(p.last_at)} · ${CHANNEL[p.contacts[0]?.channel ?? 'kakao'].icon} ${CHANNEL[p.contacts[0]?.channel ?? 'kakao'].label}` : '아직 연락 기록이 없어요';
+  const tagsHTML = p.tags.slice(0, 3).map(t => `<span class="rounded-full px-2 py-0.5 text-[11px]" style="background:hsl(var(--tag-${t.color})/0.4)">${t.name}</span>`).join('');
+  return `<div class="flex items-start gap-3 p-4 rounded-xl border border-border bg-card tap shadow-soft cursor-pointer ${variantClass}" onclick="go('person', '${p.id}')">
+    <div class="h-12 w-12 rounded-full bg-secondary text-secondary-foreground grid place-items-center font-semibold">${p.name[0]}</div>
+    <div class="min-w-0 flex-1">
+      <div class="flex items-start justify-between gap-2">
+        <div class="min-w-0 flex-1">
+          <h3 class="truncate text-base font-semibold">${p.name}</h3>
+          <p class="mt-0.5 text-xs text-muted-foreground">${TYPE_LABEL[p.relationship_type]}${p.mbti ? ` · ${p.mbti}` : ''}</p>
+        </div>
+        <span class="text-xs font-semibold ${b.toneClass} tabular-nums">${p.score}</span>
+      </div>
+      ${tagsHTML ? `<div class="mt-2 flex flex-wrap gap-1.5">${tagsHTML}</div>` : ''}
+      <p class="mt-2 text-xs text-muted-foreground">${lastLabel}</p>
+    </div>
+  </div>`;
+}
+
+function reminderCard(r) {
+  const p = PERSONS.find(x => x.id === r.person_id);
+  const date = new Date(r.scheduled_at);
+  const past = date.getTime() < Date.now() && new Date().toDateString() !== date.toDateString();
+  const icon = r.type === 'birthday' ? '🎂' : r.type === 'event' ? '🎉' : '👋';
+  return `<div class="rounded-xl border border-border bg-card p-4 ${past ? 'border-destructive/40' : ''}">
+    <div class="flex items-start gap-3">
+      <span class="text-xl">${icon}</span>
+      <div class="min-w-0 flex-1">
+        <p class="text-sm font-semibold cursor-pointer hover:underline" onclick="go('person', '${p.id}')">${p.name}</p>
+        <p class="text-sm">${r.message}</p>
+        <p class="mt-1 text-xs text-muted-foreground tabular-nums">${fullDateKo(r.scheduled_at)} · ${timeKo(r.scheduled_at)} (${relativeKo(r.scheduled_at)})</p>
+      </div>
+    </div>
+    <div class="mt-3 flex gap-2">
+      <button class="rounded-md border border-border bg-card px-2.5 h-8 text-xs tap" onclick="alert('완료 처리 (목업)')">✓ 완료</button>
+      <button class="rounded-md px-2.5 h-8 text-xs text-muted-foreground tap" onclick="alert('내일로 연기 (목업)')">⏰ 내일로 연기</button>
+    </div>
+  </div>`;
+}
+
+// ========== Person Detail ==========
+function renderPerson(id) {
+  const p = PERSONS.find(x => x.id === id);
+  if (!p) {
+    document.getElementById('pd-body').innerHTML = '<p class="text-center text-muted-foreground py-8">인물을 찾을 수 없어요.</p>';
+    return;
+  }
+  document.getElementById('pd-title').textContent = p.name;
+  const b = bandFor(p.score);
+  const tagsHTML = p.tags.map(t => `<span class="rounded-full px-2.5 py-1 text-xs" style="background:hsl(var(--tag-${t.color})/0.4)">${t.name}</span>`).join('');
+  const timeline = [
+    ...p.contacts.map(c => ({ kind: 'contact', ts: c.ts, content: `<div><span class="text-base mr-1">${CHANNEL[c.channel].icon}</span><b class="text-sm">${CHANNEL[c.channel].label}</b>${c.memo ? ` · <span class="text-sm text-muted-foreground">${c.memo}</span>` : ''}</div>` })),
+    ...p.notes.map(n => ({ kind: 'note', ts: n.ts, content: `<div><span class="text-base mr-1">📝</span><span class="text-sm">${n.body}</span></div>` })),
+  ].sort((a, b) => new Date(b.ts) - new Date(a.ts));
+
+  document.getElementById('pd-body').innerHTML = `
+    <section class="rounded-2xl border border-border bg-card p-5">
+      <div class="flex items-start gap-4">
+        <div class="h-16 w-16 rounded-full bg-secondary text-lg font-semibold grid place-items-center">${p.name[0]}</div>
+        <div class="min-w-0 flex-1">
+          <h2 class="truncate text-lg font-semibold">${p.name}</h2>
+          <p class="mt-0.5 text-sm text-muted-foreground">${TYPE_LABEL[p.relationship_type]}${p.mbti ? ` · ${p.mbti}` : ''}${p.birth ? ` · 🎂 ${p.birth}` : ''}</p>
+          <p class="mt-1 text-xs text-muted-foreground">${p.last_at ? `마지막 연락 ${relativeKo(p.last_at)} (${fullDateKo(p.last_at)})` : '아직 연락 기록이 없어요'}</p>
+        </div>
+        <div class="text-center">
+          <div class="text-2xl font-bold ${b.toneClass} tabular-nums">${p.score}</div>
+          <div class="text-[11px] ${b.toneClass}">${b.label}</div>
+        </div>
+      </div>
+      ${tagsHTML ? `<div class="mt-4 flex flex-wrap gap-1.5">${tagsHTML}</div>` : ''}
+    </section>
+
+    <section class="mt-4 flex flex-wrap gap-2">
+      <button class="rounded-md border border-border bg-card px-3 h-9 text-sm tap" onclick="alert('연락 기록 다이얼로그 (목업)')">💬 연락 기록</button>
+      <button class="rounded-md border border-border bg-card px-3 h-9 text-sm tap" onclick="alert('리마인더 추가 (목업)')">⏰ 리마인더</button>
+      <button class="rounded-md border border-border bg-card px-3 h-9 text-sm tap" onclick="alert('AI 관계 분석 (목업)')">✨ 관계 분석</button>
+      <button class="rounded-md border border-border bg-card px-3 h-9 text-sm opacity-60" disabled>🎁 경조사 (M2)</button>
+    </section>
+
+    ${(p.memo || p.how_we_met || p.food) ? `
+    <section class="mt-5 space-y-3 rounded-xl border border-border bg-card p-4 text-sm">
+      ${p.how_we_met ? `<div><p class="text-xs font-medium text-muted-foreground">알게 된 경로</p><p class="mt-0.5">${p.how_we_met}</p></div>` : ''}
+      ${p.food ? `<div><p class="text-xs font-medium text-muted-foreground">음식 취향</p><p class="mt-0.5">${p.food}</p></div>` : ''}
+      ${p.memo ? `<div><p class="text-xs font-medium text-muted-foreground">메모</p><p class="mt-0.5">${p.memo}</p></div>` : ''}
+    </section>` : ''}
+
+    <section class="mt-6">
+      <h3 class="mb-3 text-sm font-semibold">타임라인</h3>
+      ${timeline.length ? `
+      <ol class="relative border-l border-border pl-4 space-y-4">
+        ${timeline.map(item => `
+          <li class="relative">
+            <span class="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-primary"></span>
+            <p class="text-[11px] text-muted-foreground tabular-nums">${fullDateKo(item.ts)} · ${relativeKo(item.ts)}</p>
+            <div class="mt-0.5">${item.content}</div>
+          </li>
+        `).join('')}
+      </ol>
+      ` : `<p class="text-center text-muted-foreground text-sm py-4">아직 기록이 없어요.</p>`}
+    </section>
+
+    <section class="mt-6">
+      <h3 class="mb-2 text-sm font-semibold">새 메모 추가</h3>
+      <textarea rows="3" placeholder="이번 만남에서 알게 된 점, 다음에 챙길 것…" class="w-full rounded-md border border-input bg-card px-3 py-2 text-sm"></textarea>
+      <div class="flex justify-end mt-2">
+        <button class="rounded-md bg-primary text-primary-foreground px-3 h-9 text-sm tap" onclick="alert('메모 저장 (목업)')">메모 저장</button>
+      </div>
+    </section>
+
+    <section class="mt-8 mb-2">
+      <button class="rounded-md border border-border bg-card px-3 h-9 text-sm text-destructive tap" onclick="alert('삭제 (목업)')">🗑 이 인물 삭제</button>
+    </section>
+  `;
+}
+
+// ========== Reminders ==========
+function renderReminders() {
+  const sorted = [...REMINDERS].sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at));
+  const now = Date.now();
+  const today = new Date(); today.setHours(0,0,0,0);
+  const inAWeek = today.getTime() + 7 * 86400000;
+  const buckets = { overdue: [], today: [], week: [], later: [] };
+  for (const r of sorted) {
+    const d = new Date(r.scheduled_at);
+    const dayStart = new Date(d); dayStart.setHours(0,0,0,0);
+    if (dayStart.getTime() < today.getTime()) buckets.overdue.push(r);
+    else if (dayStart.getTime() === today.getTime()) buckets.today.push(r);
+    else if (dayStart.getTime() < inAWeek) buckets.week.push(r);
+    else buckets.later.push(r);
+  }
+  const sections = [
+    { key: 'overdue', title: '지난 일정', tone: 'text-destructive' },
+    { key: 'today', title: '오늘' },
+    { key: 'week', title: '이번 주' },
+    { key: 'later', title: '이후' },
+  ];
+  document.getElementById('rem-body').innerHTML = sections
+    .filter(s => buckets[s.key].length > 0)
+    .map(s => `<section>
+      <h2 class="mb-2 text-sm font-semibold ${s.tone ?? ''}">${s.title}</h2>
+      <div class="space-y-2">${buckets[s.key].map(reminderCard).join('')}</div>
+    </section>`).join('') || '<p class="text-center text-muted-foreground text-sm py-8">예정된 리마인더가 없어요.</p>';
+}
+
+// ========== Search ==========
+function renderSearch() {
+  const q = (document.getElementById('search-input')?.value ?? '').trim().toLowerCase();
+  const types = ['family', 'friend', 'colleague', 'client', 'acquaintance', 'etc'];
+  const activeTypes = window._searchTypes || [];
+  document.getElementById('search-types').innerHTML = types.map(t => `
+    <button class="rounded-full border px-2.5 py-1 text-xs tap ${activeTypes.includes(t) ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-card text-muted-foreground'}" onclick="toggleSearchType('${t}')">${TYPE_LABEL[t]}</button>
+  `).join('');
+  const results = PERSONS.filter(p => {
+    if (q && !p.name.toLowerCase().includes(q)) return false;
+    if (activeTypes.length && !activeTypes.includes(p.relationship_type)) return false;
+    return true;
+  });
+  document.getElementById('search-results').innerHTML = results.length
+    ? `<p class="text-xs text-muted-foreground">결과 ${results.length}건</p>` + results.map(personCard).join('')
+    : `<div class="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">검색 결과가 없어요.</div>`;
+}
+function toggleSearchType(t) {
+  window._searchTypes = window._searchTypes || [];
+  const i = window._searchTypes.indexOf(t);
+  if (i >= 0) window._searchTypes.splice(i, 1); else window._searchTypes.push(t);
+  renderSearch();
+}
+
+// ========== Settings helpers ==========
+function setTheme(mode) {
+  if (mode === 'system') {
+    document.documentElement.classList.toggle('dark', matchMedia('(prefers-color-scheme: dark)').matches);
+  } else {
+    document.documentElement.classList.toggle('dark', mode === 'dark');
+  }
+}
+function exportJson() {
+  const blob = new Blob([JSON.stringify({ persons: PERSONS, reminders: REMINDERS }, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'gwangyebu-prototype-' + new Date().toISOString().slice(0, 10) + '.json';
+  a.click();
+}
+
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,162 @@
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Page surfaces — warm, slightly off-white */
+    --background: 30 20% 99%;
+    --foreground: 20 14% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 20 14% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 20 14% 12%;
+
+    /* Primary — warm coral */
+    --primary: 12 75% 58%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary — soft warm beige */
+    --secondary: 30 30% 94%;
+    --secondary-foreground: 20 14% 18%;
+
+    /* Muted — neutral warm gray */
+    --muted: 30 12% 96%;
+    --muted-foreground: 20 8% 42%;
+
+    /* Accent — gentle peach */
+    --accent: 28 60% 92%;
+    --accent-foreground: 20 14% 18%;
+
+    /* Status */
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 145 35% 45%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 78% 50%;
+    --warning-foreground: 20 14% 12%;
+
+    /* Lines & inputs */
+    --border: 30 12% 88%;
+    --input: 30 12% 88%;
+    --ring: 12 75% 58%;
+
+    /* Tag palette */
+    --tag-1: 12 65% 70%;
+    --tag-2: 38 78% 70%;
+    --tag-3: 145 30% 65%;
+    --tag-4: 200 30% 65%;
+    --tag-5: 245 35% 72%;
+    --tag-6: 295 35% 75%;
+    --tag-7: 350 35% 75%;
+    --tag-8: 38 30% 80%;
+
+    /* Radius */
+    --radius: 0.625rem;
+  }
+
+  .dark {
+    --background: 20 14% 6%;
+    --foreground: 30 10% 96%;
+    --card: 20 14% 9%;
+    --card-foreground: 30 10% 96%;
+    --popover: 20 14% 9%;
+    --popover-foreground: 30 10% 96%;
+
+    --primary: 12 78% 64%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 20 8% 18%;
+    --secondary-foreground: 30 10% 92%;
+
+    --muted: 20 6% 14%;
+    --muted-foreground: 30 6% 64%;
+
+    --accent: 20 14% 22%;
+    --accent-foreground: 30 10% 92%;
+
+    --destructive: 0 65% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 145 35% 55%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 80% 60%;
+    --warning-foreground: 20 14% 12%;
+
+    --border: 20 8% 22%;
+    --input: 20 8% 22%;
+    --ring: 12 78% 64%;
+
+    --tag-1: 12 50% 55%;
+    --tag-2: 38 60% 55%;
+    --tag-3: 145 25% 50%;
+    --tag-4: 200 25% 50%;
+    --tag-5: 245 30% 60%;
+    --tag-6: 295 30% 60%;
+    --tag-7: 350 30% 60%;
+    --tag-8: 38 25% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui,
+      Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    line-height: 1.6;
+    text-size-adjust: 100%;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    line-height: 1.35;
+    letter-spacing: -0.01em;
+  }
+
+  button,
+  [role="button"],
+  a {
+    touch-action: manipulation;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
+@media (hover: hover) {
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/20 rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/40;
+  }
+}
