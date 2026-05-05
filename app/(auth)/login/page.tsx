@@ -1,9 +1,7 @@
 import Link from "next/link"
-import { signIn, signUp } from "./actions"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { OAuthButtons } from "./oauth-buttons"
+import { AuthForm } from "./auth-form"
 
 export const metadata = { title: "로그인" }
 
@@ -40,48 +38,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         </p>
       ) : null}
 
-      <form className="space-y-3">
-        <input type="hidden" name="next" value={next} />
-        <div className="space-y-1.5">
-          <Label htmlFor="email">이메일</Label>
-          <Input
-            id="email"
-            type="email"
-            name="email"
-            required
-            autoComplete="email"
-            placeholder="you@example.com"
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="password">비밀번호</Label>
-          <Input
-            id="password"
-            type="password"
-            name="password"
-            required
-            minLength={6}
-            autoComplete="current-password"
-            placeholder="6자 이상"
-          />
-        </div>
-        <div className="flex gap-2">
-          <Button formAction={signIn} type="submit" className="flex-1">
-            로그인
-          </Button>
-          <Button
-            formAction={signUp}
-            type="submit"
-            variant="outline"
-            className="flex-1"
-          >
-            회원가입
-          </Button>
-        </div>
-        <p className="text-center text-[11px] text-muted-foreground">
-          이메일 인증 없이 즉시 가입돼요. 비밀번호는 6자 이상.
-        </p>
-      </form>
+      <AuthForm next={next} />
 
       <div className="relative my-1 text-center text-xs text-muted-foreground">
         <span className="relative z-10 bg-background px-2">또는</span>
