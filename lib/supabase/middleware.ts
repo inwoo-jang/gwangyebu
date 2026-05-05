@@ -16,6 +16,11 @@ const PUBLIC_PATHS = [
   "/sw.js",
   "/icons",
   "/api/health",
+  // 게스트 모드 진입/종료는 미인증 상태에서 호출되어야 함.
+  // 빠지면 /login으로 redirect되어 쿠키 설정이 실행되지 않음.
+  "/api/guest",
+  // 회원가입 폼의 이메일 중복 체크도 미인증 호출.
+  "/api/auth/check-email",
 ]
 
 function isPublicPath(pathname: string): boolean {
