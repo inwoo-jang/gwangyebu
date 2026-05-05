@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { sendMagicLink } from "./actions"
+import { signIn, signUp } from "./actions"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -39,16 +39,8 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           {decodeURIComponent(sp.error)}
         </p>
       ) : null}
-      {sp.sent ? (
-        <p
-          role="status"
-          className="rounded-md bg-success/10 px-3 py-2 text-sm text-success"
-        >
-          로그인 링크를 보냈어요. 메일을 확인해 주세요.
-        </p>
-      ) : null}
 
-      <form action={sendMagicLink} className="space-y-3">
+      <form className="space-y-3">
         <input type="hidden" name="next" value={next} />
         <div className="space-y-1.5">
           <Label htmlFor="email">이메일</Label>
@@ -61,9 +53,34 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
             placeholder="you@example.com"
           />
         </div>
-        <Button type="submit" className="w-full">
-          로그인 링크 받기
-        </Button>
+        <div className="space-y-1.5">
+          <Label htmlFor="password">비밀번호</Label>
+          <Input
+            id="password"
+            type="password"
+            name="password"
+            required
+            minLength={6}
+            autoComplete="current-password"
+            placeholder="6자 이상"
+          />
+        </div>
+        <div className="flex gap-2">
+          <Button formAction={signIn} type="submit" className="flex-1">
+            로그인
+          </Button>
+          <Button
+            formAction={signUp}
+            type="submit"
+            variant="outline"
+            className="flex-1"
+          >
+            회원가입
+          </Button>
+        </div>
+        <p className="text-center text-[11px] text-muted-foreground">
+          이메일 인증 없이 즉시 가입돼요. 비밀번호는 6자 이상.
+        </p>
       </form>
 
       <div className="relative my-1 text-center text-xs text-muted-foreground">
