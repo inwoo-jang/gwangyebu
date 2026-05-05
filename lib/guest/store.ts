@@ -78,6 +78,10 @@ interface Actions {
 
   // tags
   createTag: (name: string) => string
+  /** 태그 이름 수정. 동일 이름이 있으면 false 반환. */
+  updateTag: (id: string, name: string) => boolean
+  /** 태그 삭제. 인물에 매핑된 person_tags도 함께 정리. */
+  deleteTag: (id: string) => void
   listTags: () => GuestTag[]
   getTagsForPerson: (personId: string) => GuestTag[]
   attachTag: (personId: string, tagId: string) => void
@@ -91,10 +95,20 @@ interface Actions {
 
   // reminders
   createReminder: (
-    input: Omit<
+    input: Pick<
       GuestReminder,
-      "id" | "created_at" | "updated_at" | "completed_at" | "status"
-    > & { status?: GuestReminder["status"] },
+      | "person_id"
+      | "reminder_type"
+      | "scheduled_at"
+      | "repeat_rule"
+      | "channel"
+    > & {
+      status?: GuestReminder["status"]
+      title?: string | null
+      location?: string | null
+      co_person_ids?: string[]
+      message?: string | null
+    },
   ) => string
   completeReminder: (id: string) => void
   snoozeReminder: (id: string, scheduled_at: string) => void
@@ -283,6 +297,25 @@ export const useGuestStore = create<GuestState & Actions>()(
         return tag.id
       },
 
+      updateTag: (id, name) => {
+        const trimmed = name.trim()
+        if (!trimmed) return false
+        // 동일 이름 다른 태그 존재하면 거부
+        const dup = get().tags.find((t) => t.name === trimmed && t.id !== id)
+        if (dup) return false
+        set((s) => ({
+          tags: s.tags.map((t) => (t.id === id ? { ...t, name: trimmed } : t)),
+        }))
+        return true
+      },
+
+      deleteTag: (id) => {
+        set((s) => ({
+          tags: s.tags.filter((t) => t.id !== id),
+          personTags: s.personTags.filter((pt) => pt.tag_id !== id),
+        }))
+      },
+
       listTags: () => get().tags,
 
       getTagsForPerson: (personId) => {
@@ -349,11 +382,19 @@ export const useGuestStore = create<GuestState & Actions>()(
         const id = uid()
         const reminder: GuestReminder = {
           id,
+          person_id: input.person_id,
+          reminder_type: input.reminder_type,
+          scheduled_at: input.scheduled_at,
+          repeat_rule: input.repeat_rule,
+          channel: input.channel,
           status: input.status ?? "active",
+          title: input.title ?? null,
+          location: input.location ?? null,
+          co_person_ids: input.co_person_ids ?? [],
+          message: input.message ?? null,
           completed_at: null,
           created_at: now,
           updated_at: now,
-          ...input,
         }
         set((s) => ({ reminders: [reminder, ...s.reminders] }))
         return id
@@ -579,13 +620,14 @@ export const useGuestStore = create<GuestState & Actions>()(
         }
         return localStorage
       }),
-      version: 7,
+      version: 8,
       // v1 → v2: kakao_id → kakao_nickname.
       // v2 → v3: events/gifts/loans 빈 배열 보장.
       // v3 → v4: gifts에 notified_at 필드 추가.
       // v4 → v5: persons에 business_card_url 필드 추가.
       // v5 → v6: persons에 instagram_handle, contacts에 custom_channel 추가.
       // v6 → v7: persons에 nickname 필드 추가.
+      // v7 → v8: persons.relationship_label, reminders.title/location/co_person_ids 추가.
       migrate: (persisted: unknown, fromVersion: number) => {
         if (!persisted || typeof persisted !== "object") return persisted
         const state = persisted as {
@@ -652,6 +694,30 @@ export const useGuestStore = create<GuestState & Actions>()(
             if (!("nickname" in person)) person.nickname = null
             return person
           })
+        }
+        if (fromVersion < 8) {
+          if (Array.isArray(state.persons)) {
+            state.persons = state.persons.map((p) => {
+              if (!p || typeof p !== "object") return p
+              const person = p as Record<string, unknown>
+              if (!("relationship_label" in person))
+                person.relationship_label = null
+              return person
+            })
+          }
+          const reminders = (state as { reminders?: unknown[] }).reminders
+          if (Array.isArray(reminders)) {
+            ;(state as { reminders: unknown[] }).reminders = reminders.map(
+              (r) => {
+                if (!r || typeof r !== "object") return r
+                const reminder = r as Record<string, unknown>
+                if (!("title" in reminder)) reminder.title = null
+                if (!("location" in reminder)) reminder.location = null
+                if (!("co_person_ids" in reminder)) reminder.co_person_ids = []
+                return reminder
+              },
+            )
+          }
         }
         return persisted
       },

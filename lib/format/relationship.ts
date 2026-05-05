@@ -17,6 +17,9 @@ export const RELATIONSHIP_TYPE_LABEL: Record<
   colleague: { label: "동료", colorIndex: 4 },
   client: { label: "고객사", colorIndex: 2 },
   acquaintance: { label: "지인", colorIndex: 5 },
+  lover: { label: "연인", colorIndex: 7 },
+  crush: { label: "썸", colorIndex: 6 },
+  custom: { label: "직접입력", colorIndex: 8 },
   etc: { label: "기타", colorIndex: 8 },
 }
 
@@ -26,11 +29,25 @@ export const RELATIONSHIP_TYPE_OPTIONS: {
 }[] = [
   { value: "family", label: "가족" },
   { value: "friend", label: "친구" },
+  { value: "lover", label: "연인" },
+  { value: "crush", label: "썸" },
   { value: "colleague", label: "동료" },
   { value: "client", label: "고객사" },
   { value: "acquaintance", label: "지인" },
   { value: "etc", label: "기타" },
+  { value: "custom", label: "직접입력…" },
 ]
+
+/** custom 일 때는 사용자 라벨 우선 노출. */
+export function relationshipDisplay(person: {
+  relationship_type: RelationshipType
+  relationship_label?: string | null
+}): string {
+  if (person.relationship_type === "custom" && person.relationship_label) {
+    return person.relationship_label
+  }
+  return RELATIONSHIP_TYPE_LABEL[person.relationship_type].label
+}
 
 export const CONTACT_CHANNEL_LABEL: Record<
   ContactChannel,

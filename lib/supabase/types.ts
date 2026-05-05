@@ -13,6 +13,9 @@ export type RelationshipType =
   | "colleague"
   | "client"
   | "acquaintance"
+  | "lover"
+  | "crush"
+  | "custom"
   | "etc"
 
 export type PersonStatus = "active" | "inactive"
@@ -45,6 +48,7 @@ export type EventType =
 
 export type GiftDirection = "sent" | "received"
 export type GiftKind = "cash" | "item"
+export type LoanDirection = "lent" | "borrowed"
 
 export type MessageSource = "kakao" | "sms" | "email" | "other"
 
@@ -82,8 +86,24 @@ export interface Person {
   id: string
   user_id: string
   name: string
+  /** 닉네임/애칭 */
+  nickname: string | null
   photo_url: string | null
+  /** "male" | "female" — 프로필 이미지 폴더 선택 */
+  gender: "male" | "female"
+  /** 1~30. /profiles/{gender}/{N}.png */
+  profile_index: number
+  /** 1~6. 파스텔 배경 팔레트 인덱스 */
+  avatar_bg: number
   relationship_type: RelationshipType
+  /** relationship_type='custom'일 때 사용자가 입력한 라벨 */
+  relationship_label: string | null
+  /** 휴대폰 번호 */
+  phone_number: string | null
+  /** 카톡 친구 목록에 보이는 이름 */
+  kakao_nickname: string | null
+  /** 인스타그램 핸들 (@ 없이) */
+  instagram_handle: string | null
   birth_year: number | null
   birth_month: number | null
   birth_day: number | null
@@ -94,6 +114,8 @@ export interface Person {
   reminder_interval_days: number
   last_contact_at: string | null
   status: PersonStatus
+  /** 명함 이미지 URL (Storage public URL) */
+  business_card_url: string | null
   deleted_at: string | null
   created_at: string
   updated_at: string
@@ -136,6 +158,12 @@ export interface Reminder {
   repeat_rule: ReminderRepeat
   channel: ReminderChannel
   status: ReminderStatus
+  /** 짧은 제목 (예: "민호 결혼식") */
+  title: string | null
+  /** 일정 장소 (예: "강남 메리어트") */
+  location: string | null
+  /** 함께하는 사람들 (메인 person_id 외) */
+  co_person_ids: string[]
   message: string | null
   completed_at: string | null
   created_at: string
@@ -177,6 +205,20 @@ export interface Gift {
   estimated_value: number | null
   occurred_at: string
   reason: string | null
+  notified_at: string | null
+  created_at: string
+}
+
+export interface Loan {
+  id: string
+  user_id: string
+  person_id: string
+  direction: LoanDirection
+  amount: number
+  occurred_at: string
+  due_at: string | null
+  returned_at: string | null
+  memo: string | null
   created_at: string
 }
 

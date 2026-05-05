@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { LogOut, Trash2 } from "lucide-react"
+import { LogOut, Trash2, AlertTriangle } from "lucide-react"
 import { toast } from "sonner"
 import { AppShell } from "@/components/layout/app-shell"
 import { AppHeader } from "@/components/layout/app-header"
@@ -9,11 +9,22 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select } from "@/components/ui/select"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { CollapsibleSection } from "@/components/ui/collapsible-section"
 import { ThemeToggle } from "@/components/settings/theme-toggle"
 import { GuestBadge } from "@/components/guest/guest-badge"
 import { useGuestStore } from "@/lib/guest/store"
 import { GUEST_STORAGE_KEY } from "@/lib/guest/types"
 import type { AiProvider } from "@/lib/supabase/types"
+
+const CONFIRM_TEXT = "초기화"
 
 const AI_OPTIONS: { value: AiProvider; label: string }[] = [
   { value: "auto", label: "자동 (사용 가능한 키)" },
@@ -31,6 +42,8 @@ export function GuestSettings() {
   const [displayName, setDisplayName] = React.useState(
     settings.display_name ?? "",
   )
+  const [resetOpen, setResetOpen] = React.useState(false)
+  const [resetInput, setResetInput] = React.useState("")
 
   const handleExport = () => {
     const data = exportJson()
@@ -45,12 +58,13 @@ export function GuestSettings() {
     URL.revokeObjectURL(url)
   }
 
-  const handleResetData = () => {
-    if (!confirm("모든 게스트 데이터를 삭제할까요? 되돌릴 수 없어요.")) return
+  const handleResetConfirmed = () => {
     resetAll()
     if (typeof window !== "undefined") {
       window.localStorage.removeItem(GUEST_STORAGE_KEY)
     }
+    setResetOpen(false)
+    setResetInput("")
     toast.success("초기화되었어요")
   }
 
@@ -112,14 +126,33 @@ export function GuestSettings() {
           <Button variant="outline" onClick={handleExport} className="w-full">
             JSON으로 내보내기
           </Button>
-          <Button
-            variant="outline"
-            onClick={handleResetData}
-            className="w-full gap-2 text-destructive"
+
+          <CollapsibleSection
+            icon={<AlertTriangle className="h-3.5 w-3.5 text-destructive" />}
+            title={
+              <span className="text-destructive text-xs">
+                위험 영역 — 데이터 초기화
+              </span>
+            }
+            defaultOpen={false}
+            card={false}
+            className="border-destructive/40 bg-destructive/5 mt-2"
+            bodyClassName="pt-0"
           >
-            <Trash2 className="h-4 w-4" />
-            게스트 데이터 초기화
-          </Button>
+            <p className="text-[11px] text-muted-foreground mb-2">
+              인물·연락 기록·태그·리마인더 등 이 브라우저에 저장된{" "}
+              <strong className="text-destructive">모든 게스트 데이터</strong>가
+              영구 삭제되며 복구할 수 없어요.
+            </p>
+            <Button
+              variant="outline"
+              onClick={() => setResetOpen(true)}
+              className="w-full gap-2 text-destructive border-destructive/40"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              게스트 데이터 초기화…
+            </Button>
+          </CollapsibleSection>
         </section>
 
         <section className="space-y-3 rounded-xl border border-border bg-card p-4">
@@ -143,6 +176,57 @@ export function GuestSettings() {
           관계부 v0.1 · 베타
         </p>
       </div>
+
+      <Dialog
+        open={resetOpen}
+        onOpenChange={(o) => {
+          setResetOpen(o)
+          if (!o) setResetInput("")
+        }}
+      >
+        <DialogContent className="sm:max-w-[420px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-4 w-4" />
+              모든 게스트 데이터 초기화
+            </DialogTitle>
+            <DialogDescription>
+              이 작업은 <strong className="text-destructive">되돌릴 수 없어요</strong>.
+              인물·연락 기록·태그·리마인더·경조사·선물·대여 모든 데이터가
+              영구 삭제됩니다.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground">
+              계속하려면 아래 칸에{" "}
+              <code className="rounded bg-muted px-1.5 py-0.5 text-foreground font-mono">
+                {CONFIRM_TEXT}
+              </code>{" "}
+              이라고 정확히 입력해 주세요.
+            </p>
+            <Input
+              value={resetInput}
+              onChange={(e) => setResetInput(e.target.value)}
+              placeholder={CONFIRM_TEXT}
+              autoComplete="off"
+            />
+          </div>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="ghost" onClick={() => setResetOpen(false)}>
+              취소
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleResetConfirmed}
+              disabled={resetInput.trim() !== CONFIRM_TEXT}
+              className="gap-1.5"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              영구 삭제
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppShell>
   )
 }

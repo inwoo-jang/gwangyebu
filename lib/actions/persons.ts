@@ -195,3 +195,92 @@ export async function getPerson(
   }
   return ok(data as Person)
 }
+
+export interface BulkImportItem {
+  name: string
+  phone: string | null
+  email: string | null
+}
+
+export interface BulkImportResult {
+  added: number
+  skipped: number
+}
+
+/**
+ * 전화번호부에서 가져온 연락처를 일괄 등록.
+ * - 이름 기준으로 기존 인물과 중복 제거
+ * - 전화번호/이메일은 일단 memo에 저장 (persons 스키마에 별도 컬럼 없음)
+ */
+export async function bulkCreatePersons(
+  items: BulkImportItem[],
+): Promise<ActionResult<BulkImportResult>> {
+  if (!Array.isArray(items) || items.length === 0) {
+    return ok({ added: 0, skipped: 0 })
+  }
+
+  const guard = await requireUser()
+  if (!guard.ok) return guard.error
+
+  // 기존 이름 가져와서 중복 제거
+  const { data: existing, error: existErr } = await guard.supabase
+    .from("persons")
+    .select("name")
+    .eq("user_id", guard.userId)
+    .is("deleted_at", null)
+
+  if (existErr) return fail({ code: "internal", message: existErr.message })
+
+  const existingNames = new Set(
+    (existing ?? []).map((r) => String(r.name).trim()),
+  )
+
+  const toInsert: Array<{
+    user_id: string
+    name: string
+    relationship_type: "etc"
+    memo: string | null
+    reminder_interval_days: number
+    status: "active"
+  }> = []
+  const seenInBatch = new Set<string>()
+  let skipped = 0
+
+  for (const item of items) {
+    const name = (item.name ?? "").trim()
+    if (!name || name.length > 50) {
+      skipped += 1
+      continue
+    }
+    if (existingNames.has(name) || seenInBatch.has(name)) {
+      skipped += 1
+      continue
+    }
+    seenInBatch.add(name)
+
+    const memoParts: string[] = []
+    if (item.phone) memoParts.push(`전화: ${item.phone}`)
+    if (item.email) memoParts.push(`이메일: ${item.email}`)
+    const memo = memoParts.length > 0 ? memoParts.join("\n") : null
+
+    toInsert.push({
+      user_id: guard.userId,
+      name,
+      relationship_type: "etc",
+      memo,
+      reminder_interval_days: 60,
+      status: "active",
+    })
+  }
+
+  if (toInsert.length === 0) {
+    return ok({ added: 0, skipped })
+  }
+
+  const { error } = await guard.supabase.from("persons").insert(toInsert)
+  if (error) return fail({ code: "internal", message: error.message })
+
+  revalidatePath("/")
+  revalidatePath("/persons")
+  return ok({ added: toInsert.length, skipped })
+}

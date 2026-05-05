@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { Sparkles } from "lucide-react"
 import { OAuthButtons } from "./oauth-buttons"
 import { AuthForm } from "./auth-form"
 
@@ -43,6 +44,22 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       </div>
 
       <OAuthButtons />
+
+      <div className="rounded-xl border border-dashed border-primary/40 bg-primary/5 p-3 text-center">
+        <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary">
+          <Sparkles className="h-3.5 w-3.5" />
+          처음이라면? 가입 없이 바로 둘러보기
+        </div>
+        <p className="mt-1 text-[11px] text-muted-foreground">
+          샘플 인맥 30명·메모·리마인더·경조사 기록이 미리 채워져 있어요. 데이터는 이 브라우저에만 저장돼요.
+        </p>
+        <a
+          href={`/api/guest/start?next=${encodeURIComponent(next)}`}
+          className="mt-2 inline-flex h-9 w-full items-center justify-center rounded-md bg-primary text-sm font-semibold text-primary-foreground hover:opacity-90"
+        >
+          게스트 모드로 둘러보기
+        </a>
+      </div>
 
       <p className="text-center text-xs text-muted-foreground">
         가입 시{" "}

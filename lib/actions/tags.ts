@@ -5,6 +5,8 @@ import {
   tagCreateSchema,
   tagAttachSchema,
   tagDetachSchema,
+  tagUpdateSchema,
+  tagIdSchema,
 } from "@/lib/validators/tag"
 import { ok, fail, fromZod, type ActionResult } from "@/lib/actions/result"
 import { requireUser } from "@/lib/actions/auth-guard"
@@ -88,4 +90,53 @@ export async function removeTag(
   if (error) return fail({ code: "internal", message: error.message })
   revalidatePath(`/persons/${parsed.data.person_id}`)
   return ok(parsed.data)
+}
+
+/** 태그 이름 수정. */
+export async function updateTag(
+  input: unknown,
+): Promise<ActionResult<Tag>> {
+  const parsed = tagUpdateSchema.safeParse(input)
+  if (!parsed.success) return fromZod(parsed.error)
+
+  const guard = await requireUser()
+  if (!guard.ok) return guard.error
+
+  const { data, error } = await guard.supabase
+    .from("tags")
+    .update({ name: parsed.data.name })
+    .eq("id", parsed.data.id)
+    .eq("user_id", guard.userId)
+    .select("*")
+    .single()
+
+  if (error || !data) {
+    if (error?.code === "23505") {
+      return fail({ code: "conflict", message: "이미 존재하는 태그명입니다" })
+    }
+    return fail({ code: "internal", message: error?.message ?? "수정 실패" })
+  }
+  revalidatePath("/")
+  return ok(data as Tag)
+}
+
+/** 태그 삭제. ON DELETE CASCADE로 person_tags도 정리. */
+export async function deleteTag(
+  input: unknown,
+): Promise<ActionResult<{ id: string }>> {
+  const parsed = tagIdSchema.safeParse(input)
+  if (!parsed.success) return fromZod(parsed.error)
+
+  const guard = await requireUser()
+  if (!guard.ok) return guard.error
+
+  const { error } = await guard.supabase
+    .from("tags")
+    .delete()
+    .eq("id", parsed.data.id)
+    .eq("user_id", guard.userId)
+
+  if (error) return fail({ code: "internal", message: error.message })
+  revalidatePath("/")
+  return ok({ id: parsed.data.id })
 }

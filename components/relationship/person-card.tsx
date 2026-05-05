@@ -49,6 +49,8 @@ export interface PersonCardData {
   profileIndex?: number | null
   avatarBg?: number | null
   relationshipType: RelationshipType
+  /** 관계 'custom'일 때 사용자 입력 라벨 */
+  relationshipLabel?: string | null
   mbti?: string | null
   tags?: { id: string; name: string; colorIndex?: number }[]
   lastContactAt?: string | null
@@ -82,6 +84,10 @@ export function PersonCard({
   onToggleSelect,
 }: PersonCardProps) {
   const relInfo = RELATIONSHIP_TYPE_LABEL[person.relationshipType]
+  const relLabel =
+    person.relationshipType === "custom" && person.relationshipLabel
+      ? person.relationshipLabel
+      : relInfo.label
   const channelInfo = person.lastContactChannel
     ? CONTACT_CHANNEL_LABEL[person.lastContactChannel]
     : null
@@ -156,7 +162,7 @@ export function PersonCard({
             ) : null}
           </h3>
           <span className="shrink-0 text-[11px] text-muted-foreground">
-            {relInfo.label}
+            {relLabel}
             {person.mbti ? ` · ${person.mbti}` : ""}
           </span>
         </div>

@@ -5,10 +5,21 @@
  * - "주고받은 이력이 있는지"는 호출 측에서 gifts 배열을 검사
  */
 
-import type { GuestGift, GuestPerson } from "@/lib/guest/types"
+/** 생일 임박 탐지에 필요한 최소 인물 필드 */
+export interface BirthdayPerson {
+  id: string
+  birth_month: number | null
+  birth_day: number | null
+}
 
-export interface UpcomingBirthday {
-  person: GuestPerson
+/** 선물 카운트에 필요한 최소 필드 */
+export interface BirthdayGift {
+  person_id: string
+  direction: "sent" | "received"
+}
+
+export interface UpcomingBirthday<P extends BirthdayPerson = BirthdayPerson> {
+  person: P
   /** 다가오는 생일의 ISO 날짜 (이번주/내년 등 가장 가까운 미래) */
   nextBirthday: string
   /** 오늘부터 며칠 남았는지 (0=오늘) */
@@ -54,11 +65,11 @@ function nextBirthdayDate(
   return safeDate(year + 1, month, day)
 }
 
-export function findUpcomingBirthdays(
-  persons: GuestPerson[],
-  gifts: GuestGift[],
+export function findUpcomingBirthdays<P extends BirthdayPerson>(
+  persons: P[],
+  gifts: BirthdayGift[],
   options: { withinDays?: number } = {},
-): UpcomingBirthday[] {
+): UpcomingBirthday<P>[] {
   const withinDays = options.withinDays ?? 30
   const today = new Date()
   const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate())
@@ -71,7 +82,7 @@ export function findUpcomingBirthdays(
     giftCountByPerson.set(g.person_id, acc)
   }
 
-  const out: UpcomingBirthday[] = []
+  const out: UpcomingBirthday<P>[] = []
   for (const p of persons) {
     if (!p.birth_month || !p.birth_day) continue
     const next = nextBirthdayDate(p.birth_month, p.birth_day, today)

@@ -22,7 +22,10 @@ export const reminderCreateSchema = z.object({
   scheduled_at: z.string().datetime(),
   repeat_rule: reminderRepeatSchema.default("none"),
   channel: reminderChannelSchema.default("inapp"),
-  message: z.string().max(200).optional().nullable(),
+  title: z.string().trim().max(100).optional().nullable(),
+  location: z.string().trim().max(100).optional().nullable(),
+  co_person_ids: z.array(z.string().uuid()).max(20).optional(),
+  message: z.string().max(1000).optional().nullable(),
 })
 
 export const reminderCompleteSchema = z.object({

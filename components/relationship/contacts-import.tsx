@@ -1,34 +1,27 @@
 "use client"
 
 import * as React from "react"
+import { useRouter } from "next/navigation"
 import { ContactRound, Loader2, Upload } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { ContactsImportGuide } from "@/components/relationship/contacts-import-guide"
-import { useGuestStore } from "@/lib/guest/store"
 import {
   isContactPickerSupported,
   parseVCard,
   pickFromContactPicker,
   type ImportedContact,
 } from "@/lib/contacts/parse-vcard"
-import {
-  DEFAULT_AVATAR_BG,
-  DEFAULT_GENDER,
-  DEFAULT_PROFILE_INDEX,
-} from "@/lib/profile/avatar"
-import { digitsOnly } from "@/lib/format/phone"
+import { bulkCreatePersons } from "@/lib/actions/persons"
 
 /**
- * 전화번호부 가져오기.
- * - Contact Picker API 지원 (Chrome Android) → 시스템 picker
- * - 미지원 → vCard (.vcf) 파일 업로드 폴백
- *
- * 가져온 항목은 새 인물로 일괄 등록. 이름이 없으면 스킵.
+ * 전화번호부 가져오기 (인증 모드).
+ * - Contact Picker API → 시스템 picker (Chrome Android)
+ * - 미지원 → vCard(.vcf) 파일 업로드 폴백
+ * 가져온 항목은 서버 액션 bulkCreatePersons로 일괄 등록.
  */
-export function GuestContactsImport() {
-  const persons = useGuestStore((s) => s.persons)
-  const createPerson = useGuestStore((s) => s.createPerson)
+export function ContactsImport() {
+  const router = useRouter()
   const inputRef = React.useRef<HTMLInputElement>(null)
   const [busy, setBusy] = React.useState(false)
   const [supported, setSupported] = React.useState(false)
@@ -37,71 +30,35 @@ export function GuestContactsImport() {
     setSupported(isContactPickerSupported())
   }, [])
 
-  const importBatch = (items: ImportedContact[]) => {
-    // 이름 또는 전화번호로 중복 제거
-    const existingNames = new Set(persons.map((p) => p.name.trim()))
-    const existingPhones = new Set(
-      persons
-        .map((p) => digitsOnly(p.phone_number ?? ""))
-        .filter((d) => d.length >= 9),
-    )
-    let added = 0
-    let skipped = 0
-    for (const c of items) {
-      const name = c.name.trim()
-      if (!name) {
-        skipped += 1
-        continue
-      }
-      const phoneDigits = digitsOnly(c.phone ?? "")
-      if (
-        existingNames.has(name) ||
-        (phoneDigits.length >= 9 && existingPhones.has(phoneDigits))
-      ) {
-        skipped += 1
-        continue
-      }
-      createPerson({
-        name,
-        photo_url: null,
-        gender: DEFAULT_GENDER,
-        profile_index: DEFAULT_PROFILE_INDEX,
-        avatar_bg: DEFAULT_AVATAR_BG,
-        relationship_type: "etc",
-        relationship_label: null,
-        phone_number: phoneDigits || null,
-        kakao_nickname: null,
-        instagram_handle: null,
-        birth_year: null,
-        birth_month: null,
-        birth_day: null,
-        mbti: null,
-        food_preference: null,
-        how_we_met: null,
-        memo: c.email ? `이메일: ${c.email}` : null,
-        reminder_interval_days: 60,
-      })
-      existingNames.add(name)
-      if (phoneDigits.length >= 9) existingPhones.add(phoneDigits)
-      added += 1
+  const submit = async (items: ImportedContact[]) => {
+    if (items.length === 0) {
+      toast.message("선택한 연락처가 없어요")
+      return
     }
-    return { added, skipped }
+    const res = await bulkCreatePersons(
+      items.map((c) => ({
+        name: c.name,
+        phone: c.phone,
+        email: c.email,
+      })),
+    )
+    if (!res.ok) {
+      toast.error(res.error.message)
+      return
+    }
+    const { added, skipped } = res.data
+    toast.success(
+      `${added}명 추가됨${skipped > 0 ? ` (중복/오류 ${skipped}명 건너뜀)` : ""}`,
+    )
+    if (added > 0) router.refresh()
   }
 
   const handlePicker = async () => {
     setBusy(true)
     try {
       const items = await pickFromContactPicker()
-      if (items.length === 0) {
-        toast.message("선택한 연락처가 없어요")
-        return
-      }
-      const { added, skipped } = importBatch(items)
-      toast.success(
-        `${added}명 추가됨${skipped > 0 ? ` (중복 ${skipped}명 건너뜀)` : ""}`,
-      )
+      await submit(items)
     } catch (e) {
-      // 사용자가 picker를 취소한 경우 등은 조용히 무시
       const msg = e instanceof Error ? e.message : "연락처 가져오기 실패"
       if (!/cancel|abort/i.test(msg)) toast.error(msg)
     } finally {
@@ -118,10 +75,7 @@ export function GuestContactsImport() {
         toast.error("vCard에서 연락처를 찾지 못했어요")
         return
       }
-      const { added, skipped } = importBatch(items)
-      toast.success(
-        `${added}명 추가됨${skipped > 0 ? ` (중복 ${skipped}명 건너뜀)` : ""}`,
-      )
+      await submit(items)
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "파일 처리 실패")
     } finally {

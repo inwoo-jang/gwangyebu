@@ -23,6 +23,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { TagChip } from "@/components/relationship/tag-chip"
+import { Settings as SettingsIcon } from "lucide-react"
+import { GuestTagManageButton } from "@/components/guest/guest-tag-manage-button"
 import {
   RELATIONSHIP_TYPE_OPTIONS,
   MBTI_OPTIONS,
@@ -57,8 +59,12 @@ const formSchema = z.object({
     "colleague",
     "client",
     "acquaintance",
+    "lover",
+    "crush",
+    "custom",
     "etc",
   ]),
+  relationship_label: z.string().max(30).optional(),
   phone_number: z.string().max(20).optional(),
   kakao_nickname: z.string().max(50).optional(),
   instagram_handle: z.string().max(50).optional(),
@@ -113,6 +119,10 @@ function GuestPersonFormInner({ mode, personId, preContent }: GuestPersonFormPro
   }, [mode, personId, persons, personTags])
 
   const [tagIds, setTagIds] = React.useState<string[]>(initial?.tag_ids ?? [])
+  // 태그 삭제 시 stale ID 정리 (store의 tags가 reactive → effect로 동기화)
+  React.useEffect(() => {
+    setTagIds((prev) => prev.filter((id) => tags.some((t) => t.id === id)))
+  }, [tags])
   const [newTagName, setNewTagName] = React.useState("")
   const [gender, setGender] = React.useState<Gender>(
     initial?.gender ?? DEFAULT_GENDER,
@@ -131,6 +141,7 @@ function GuestPersonFormInner({ mode, personId, preContent }: GuestPersonFormPro
       nickname: initial?.nickname ?? "",
       relationship_type:
         (initial?.relationship_type as RelationshipType) ?? "etc",
+      relationship_label: initial?.relationship_label ?? "",
       phone_number: initial?.phone_number ?? "",
       kakao_nickname: initial?.kakao_nickname ?? "",
       instagram_handle: initial?.instagram_handle ?? "",
@@ -217,6 +228,10 @@ function GuestPersonFormInner({ mode, personId, preContent }: GuestPersonFormPro
       profile_index: profileIndex,
       avatar_bg: avatarBg,
       relationship_type: values.relationship_type,
+      relationship_label:
+        values.relationship_type === "custom"
+          ? values.relationship_label?.trim() || null
+          : null,
       phone_number:
         values.phone_number && values.phone_number.trim()
           ? values.phone_number.replace(/\D/g, "")
@@ -426,6 +441,23 @@ function GuestPersonFormInner({ mode, personId, preContent }: GuestPersonFormPro
         </div>
       </div>
 
+      {form.watch("relationship_type") === "custom" ? (
+        <div className="space-y-1.5">
+          <Label htmlFor="relationship_label">
+            관계 라벨 직접입력 <span className="text-destructive">*</span>
+          </Label>
+          <Input
+            id="relationship_label"
+            placeholder="예: 사촌형, 거래처 사장님, 사부님"
+            maxLength={30}
+            {...form.register("relationship_label")}
+          />
+          <p className="text-[11px] text-muted-foreground">
+            인물 카드와 상세에 이 라벨이 표시돼요.
+          </p>
+        </div>
+      ) : null}
+
       <div>
         <Label className="mb-1.5 block">생일</Label>
         <div className="grid grid-cols-3 gap-2">
@@ -517,7 +549,20 @@ function GuestPersonFormInner({ mode, personId, preContent }: GuestPersonFormPro
       </div>
 
       <div className="space-y-1.5">
-        <Label>태그 (최대 10개)</Label>
+        <div className="flex items-center justify-between">
+          <Label>태그 (최대 10개)</Label>
+          <GuestTagManageButton
+            trigger={
+              <button
+                type="button"
+                className="inline-flex items-center gap-0.5 text-[11px] text-muted-foreground hover:text-foreground hover:underline"
+              >
+                <SettingsIcon className="h-3 w-3" />
+                관리
+              </button>
+            }
+          />
+        </div>
         <div className="flex flex-wrap gap-2">
           {tags.map((t) => {
             const selected = tagIds.includes(t.id)

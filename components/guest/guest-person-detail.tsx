@@ -233,6 +233,10 @@ export function GuestPersonDetail({ personId }: { personId: string }) {
   }
 
   const relInfo = RELATIONSHIP_TYPE_LABEL[person.relationship_type]
+  const relLabel =
+    person.relationship_type === "custom" && person.relationship_label
+      ? person.relationship_label
+      : relInfo.label
   const birthday =
     person.birth_month && person.birth_day
       ? `${person.birth_year ? `${person.birth_year}.` : ""}${person.birth_month}월 ${person.birth_day}일`
@@ -299,7 +303,7 @@ export function GuestPersonDetail({ personId }: { personId: string }) {
               ) : null}
             </h2>
             <p className="mt-0.5 text-sm text-muted-foreground">
-              {relInfo.label}
+              {relLabel}
               {person.mbti ? ` · ${person.mbti}` : ""}
               {birthday ? ` · 🎂 ${birthday}` : ""}
             </p>

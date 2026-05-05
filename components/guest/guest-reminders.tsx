@@ -17,13 +17,19 @@ import {
   type CalendarReminder,
 } from "@/components/relationship/reminder-calendar"
 import { PersonSelect } from "@/components/relationship/person-select"
+import { PersonMultiSelect } from "@/components/relationship/person-multi-select"
+import { Textarea } from "@/components/ui/textarea"
 import { EmptyState } from "@/components/common/empty-state"
 import { useGuestStore } from "@/lib/guest/store"
 import { useGuestHydrated } from "@/lib/guest/use-hydrated"
 import { GuestLoading } from "@/components/guest/guest-loading"
 import { CollapsibleSection } from "@/components/ui/collapsible-section"
 import { cn } from "@/lib/utils"
-import type { Reminder, ReminderType } from "@/lib/supabase/types"
+import type {
+  Reminder,
+  ReminderType,
+  ReminderChannel,
+} from "@/lib/supabase/types"
 import type { GuestReminder } from "@/lib/guest/types"
 
 interface ViewReminder extends Reminder {
@@ -69,9 +75,18 @@ export function GuestReminders() {
   const searchParams = useSearchParams()
 
   const [range, setRange] = React.useState<RangeFilter>("week")
-  const [adderOpen, setAdderOpen] = React.useState(
-    searchParams.get("add") === "1",
-  )
+  const [adderOpen, setAdderOpen] = React.useState(false)
+  const adderRef = React.useRef<HTMLDivElement>(null)
+  const urlAdd = searchParams.get("add")
+
+  React.useEffect(() => {
+    if (urlAdd === "1") setAdderOpen(true)
+  }, [urlAdd])
+  React.useEffect(() => {
+    if (adderOpen) {
+      adderRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
+    }
+  }, [adderOpen, urlAdd])
 
   const personById = React.useMemo(
     () => new Map(persons.map((p) => [p.id, p])),
@@ -170,15 +185,17 @@ export function GuestReminders() {
         }
       >
         {adderOpen ? (
-          <ReminderAdder
-            persons={persons}
-            onClose={() => setAdderOpen(false)}
-            onSubmit={(input) => {
-              createReminder(input)
-              toast.success("리마인더를 추가했어요")
-              setAdderOpen(false)
-            }}
-          />
+          <div ref={adderRef}>
+            <ReminderAdder
+              persons={persons}
+              onClose={() => setAdderOpen(false)}
+              onSubmit={(input) => {
+                createReminder(input)
+                toast.success("리마인더를 추가했어요")
+                setAdderOpen(false)
+              }}
+            />
+          </div>
         ) : (
           <EmptyState
             icon="🔔"
@@ -212,15 +229,17 @@ export function GuestReminders() {
     >
       <div className="space-y-5">
         {adderOpen ? (
-          <ReminderAdder
-            persons={persons}
-            onClose={() => setAdderOpen(false)}
-            onSubmit={(input) => {
-              createReminder(input)
-              toast.success("리마인더를 추가했어요")
-              setAdderOpen(false)
-            }}
-          />
+          <div ref={adderRef}>
+            <ReminderAdder
+              persons={persons}
+              onClose={() => setAdderOpen(false)}
+              onSubmit={(input) => {
+                createReminder(input)
+                toast.success("리마인더를 추가했어요")
+                setAdderOpen(false)
+              }}
+            />
+          </div>
         ) : null}
 
         <CollapsibleSection
@@ -360,14 +379,21 @@ function ReminderAdder({
     reminder_type: ReminderType
     scheduled_at: string
     repeat_rule: "none" | "yearly"
-    channel: "inapp"
+    channel: ReminderChannel
+    title: string | null
+    location: string | null
+    co_person_ids: string[]
     message: string | null
   }) => void
 }) {
-  const [personId, setPersonId] = React.useState<string>(persons[0]?.id ?? "")
+  const [personId, setPersonId] = React.useState<string>("")
   const [type, setType] = React.useState<ReminderType>("followup")
+  const [channel, setChannel] = React.useState<ReminderChannel>("inapp")
   const [date, setDate] = React.useState(todayLocalDate())
   const [time, setTime] = React.useState("09:00")
+  const [title, setTitle] = React.useState("")
+  const [location, setLocation] = React.useState("")
+  const [coPersonIds, setCoPersonIds] = React.useState<string[]>([])
   const [message, setMessage] = React.useState("")
 
   const submit = () => {
@@ -380,7 +406,10 @@ function ReminderAdder({
       reminder_type: type,
       scheduled_at: new Date(`${date}T${time || "09:00"}:00`).toISOString(),
       repeat_rule: type === "birthday" ? "yearly" : "none",
-      channel: "inapp",
+      channel,
+      title: title.trim() || null,
+      location: location.trim() || null,
+      co_person_ids: coPersonIds,
       message: message.trim() || null,
     })
   }
@@ -394,16 +423,24 @@ function ReminderAdder({
   }
 
   return (
-    <section className="rounded-xl border border-border bg-card p-3 space-y-3">
+    <section className="rounded-xl border-2 border-primary bg-primary/5 p-3 space-y-3 shadow-soft scroll-mt-20">
       <h3 className="text-sm font-semibold">리마인더 추가</h3>
 
       <div>
-        <Label className="text-xs">누구에게?</Label>
+        <Label className="text-xs">
+          대상 인물 <span className="text-destructive">*</span>
+        </Label>
         <PersonSelect
           persons={persons}
           value={personId}
           onChange={setPersonId}
+          placeholder="인물 선택 (필수)"
         />
+        {!personId ? (
+          <p className="mt-1 text-[11px] text-warning">
+            인물을 먼저 선택해 주세요.
+          </p>
+        ) : null}
       </div>
 
       <div className="space-y-1">
@@ -428,6 +465,29 @@ function ReminderAdder({
         </div>
       </div>
 
+      <div className="space-y-1">
+        <Label className="text-xs">알림 채널</Label>
+        <Select
+          value={channel}
+          onChange={(e) => setChannel(e.target.value as ReminderChannel)}
+          options={[
+            { value: "inapp", label: "앱 내" },
+            { value: "webpush", label: "웹 푸시" },
+            { value: "kakao", label: "카카오 알림" },
+          ]}
+        />
+      </div>
+
+      <div className="space-y-1">
+        <Label className="text-xs">제목</Label>
+        <Input
+          placeholder="예: 민호 결혼식, 지수 생일 카톡"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          maxLength={100}
+        />
+      </div>
+
       <div className="grid grid-cols-2 gap-2">
         <div className="space-y-1">
           <Label className="text-xs">날짜</Label>
@@ -448,12 +508,35 @@ function ReminderAdder({
       </div>
 
       <div className="space-y-1">
-        <Label className="text-xs">메시지 (선택)</Label>
+        <Label className="text-xs">장소</Label>
         <Input
-          placeholder="예: 안부 전하기, 책 빌려주기"
+          placeholder="예: 강남 메리어트 그랜드볼룸"
+          value={location}
+          onChange={(e) => setLocation(e.target.value)}
+          maxLength={100}
+        />
+      </div>
+
+      {persons.length > 1 ? (
+        <div className="space-y-1">
+          <Label className="text-xs">함께하는 사람</Label>
+          <PersonMultiSelect
+            persons={persons}
+            values={coPersonIds}
+            onChange={setCoPersonIds}
+            excludeIds={personId ? [personId] : undefined}
+          />
+        </div>
+      ) : null}
+
+      <div className="space-y-1">
+        <Label className="text-xs">메모</Label>
+        <Textarea
+          rows={3}
+          placeholder="예: 축의금 10만원 / 같이 갈 사람 약속 잡기"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
-          maxLength={120}
+          maxLength={1000}
         />
       </div>
 
@@ -466,21 +549,11 @@ function ReminderAdder({
         </Button>
       </div>
 
-      {/* repeat_rule 명시 (생일은 자동 yearly) — 안내 */}
       {type === "birthday" ? (
         <p className="text-[11px] text-muted-foreground">
           생일은 매년 반복으로 등록돼요.
         </p>
       ) : null}
-
-      {/* select 사용 위해 a11y noop */}
-      <Select
-        className="hidden"
-        options={REMINDER_TYPES.map((t) => ({ value: t.id, label: t.label }))}
-        value={type}
-        onChange={() => undefined}
-        aria-hidden
-      />
     </section>
   )
 }

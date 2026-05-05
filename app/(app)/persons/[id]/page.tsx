@@ -5,20 +5,27 @@ import { isGuestMode } from "@/lib/guest/mode"
 import { GuestPersonDetail } from "@/components/guest/guest-person-detail"
 import { AppShell } from "@/components/layout/app-shell"
 import { AppHeader } from "@/components/layout/app-header"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
+import { ProfileAvatar } from "@/components/relationship/profile-avatar"
 import { TagChip } from "@/components/relationship/tag-chip"
 import { RelationshipScoreGauge } from "@/components/relationship/relationship-score-gauge"
-import { EventTimeline, type TimelineItem } from "@/components/relationship/event-timeline"
+import {
+  EventTimeline,
+  type TimelineItem,
+} from "@/components/relationship/event-timeline"
 import { ReminderItem } from "@/components/relationship/reminder-item"
 import { LogContactDialog } from "@/components/contact/log-contact-dialog"
 import { ReminderCreateForm } from "@/components/relationship/reminder-create-form"
 import { NoteAddForm } from "@/components/relationship/note-add-form"
 import { AnalyzeButton } from "@/components/relationship/analyze-button"
+import { ContactActions } from "@/components/relationship/contact-actions"
+import { ExchangeSection } from "@/components/relationship/exchange-section"
+import { BusinessCardClient } from "@/components/relationship/business-card-client"
+import { ImportContactsFromKakao } from "@/components/relationship/import-contacts-from-kakao"
+import { EventQuickAdd } from "@/components/relationship/event-quick-add"
+import { getUserSettings } from "@/lib/actions/settings"
 import { fetchPersonDetail } from "@/lib/queries/persons"
-import {
-  RELATIONSHIP_TYPE_LABEL,
-} from "@/lib/format/relationship"
+import { RELATIONSHIP_TYPE_LABEL } from "@/lib/format/relationship"
 import { daysAgoKo, fullDateKo } from "@/lib/format/date"
 import { colorIndexForTag } from "@/lib/format/tag"
 
@@ -44,11 +51,31 @@ export default async function PersonDetailPage({
   if (await isGuestMode()) {
     return <GuestPersonDetail personId={id} />
   }
-  const detail = await fetchPersonDetail(id)
+  const [detail, settingsRes] = await Promise.all([
+    fetchPersonDetail(id),
+    getUserSettings(),
+  ])
   if (!detail) notFound()
 
-  const { person, tags, contacts, notes, score, upcomingReminder } = detail
+  const {
+    person,
+    tags,
+    contacts,
+    notes,
+    score,
+    upcomingReminder,
+    events,
+    gifts,
+    loans,
+  } = detail
+  const selfName = settingsRes.ok
+    ? (settingsRes.data.display_name ?? undefined)
+    : undefined
   const relInfo = RELATIONSHIP_TYPE_LABEL[person.relationship_type]
+  const relLabel =
+    person.relationship_type === "custom" && person.relationship_label
+      ? person.relationship_label
+      : relInfo.label
 
   const timeline: TimelineItem[] = [
     ...contacts.map<TimelineItem>((c) => ({
@@ -63,7 +90,6 @@ export default async function PersonDetailPage({
     })),
   ]
 
-  const initials = person.name.trim().slice(0, 1)
   const birthday =
     person.birth_month && person.birth_day
       ? `${person.birth_year ? `${person.birth_year}.` : ""}${person.birth_month}월 ${person.birth_day}일`
@@ -87,20 +113,24 @@ export default async function PersonDetailPage({
     >
       <section className="rounded-2xl border border-border bg-card p-5">
         <div className="flex items-start gap-4">
-          <Avatar className="h-16 w-16">
-            {person.photo_url ? (
-              <AvatarImage src={person.photo_url} alt={person.name} />
-            ) : null}
-            <AvatarFallback className="bg-secondary text-lg font-semibold">
-              {initials}
-            </AvatarFallback>
-          </Avatar>
+          <ProfileAvatar
+            gender={person.gender}
+            profileIndex={person.profile_index}
+            bgId={person.avatar_bg}
+            name={person.name}
+            size="lg"
+          />
           <div className="min-w-0 flex-1">
             <h2 className="truncate text-lg font-semibold text-foreground">
               {person.name}
+              {person.nickname ? (
+                <span className="ml-1.5 text-base font-normal text-muted-foreground">
+                  ({person.nickname})
+                </span>
+              ) : null}
             </h2>
             <p className="mt-0.5 text-sm text-muted-foreground">
-              {relInfo.label}
+              {relLabel}
               {person.mbti ? ` · ${person.mbti}` : ""}
               {birthday ? ` · 🎂 ${birthday}` : ""}
             </p>
@@ -132,12 +162,32 @@ export default async function PersonDetailPage({
 
       <section className="mt-4 flex flex-wrap gap-2">
         <LogContactDialog personId={person.id} />
+        <ImportContactsFromKakao
+          personId={person.id}
+          personName={person.name}
+          selfName={selfName}
+        />
         <ReminderCreateForm personId={person.id} />
+        <EventQuickAdd personId={person.id} personName={person.name} />
         <AnalyzeButton personId={person.id} />
-        <Button asChild variant="ghost" disabled className="opacity-60">
-          <span>🎁 경조사</span>
-        </Button>
       </section>
+
+      {person.phone_number || person.kakao_nickname || person.instagram_handle ? (
+        <div className="mt-4">
+          <ContactActions
+            phoneNumber={person.phone_number}
+            kakaoNickname={person.kakao_nickname}
+            instagramHandle={person.instagram_handle}
+            personName={person.name}
+          />
+        </div>
+      ) : null}
+
+      {score?.last_reason ? (
+        <section className="mt-4 rounded-xl border border-primary/30 bg-primary/5 p-3 text-sm text-foreground/90">
+          {score.last_reason}
+        </section>
+      ) : null}
 
       {upcomingReminder ? (
         <section className="mt-5">
@@ -150,9 +200,7 @@ export default async function PersonDetailPage({
         </section>
       ) : null}
 
-      {(person.memo ||
-        person.how_we_met ||
-        person.food_preference) ? (
+      {person.memo || person.how_we_met || person.food_preference ? (
         <section className="mt-5 space-y-3 rounded-xl border border-border bg-card p-4 text-sm">
           {person.how_we_met ? (
             <div>
@@ -181,6 +229,13 @@ export default async function PersonDetailPage({
         </section>
       ) : null}
 
+      <ExchangeSection
+        personId={person.id}
+        events={events}
+        gifts={gifts}
+        loans={loans}
+      />
+
       <section className="mt-6">
         <div className="mb-3 flex items-center justify-between">
           <h3 className="text-sm font-semibold text-foreground">타임라인</h3>
@@ -194,6 +249,12 @@ export default async function PersonDetailPage({
         </h3>
         <NoteAddForm personId={person.id} />
       </section>
+
+      <BusinessCardClient
+        personId={person.id}
+        personName={person.name}
+        initialUrl={person.business_card_url ?? null}
+      />
     </AppShell>
   )
 }

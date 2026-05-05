@@ -14,5 +14,15 @@ export const tagAttachSchema = z.object({
 
 export const tagDetachSchema = tagAttachSchema
 
+export const tagUpdateSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string().trim().min(1, "태그명").max(20),
+})
+
+export const tagIdSchema = z.object({
+  id: z.string().uuid(),
+})
+
 export type TagCreateInput = z.infer<typeof tagCreateSchema>
 export type TagAttachInput = z.infer<typeof tagAttachSchema>
+export type TagUpdateInput = z.infer<typeof tagUpdateSchema>

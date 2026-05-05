@@ -37,6 +37,8 @@ export interface GuestPerson {
   /** 1~6. 파스텔 배경 팔레트 인덱스 */
   avatar_bg: number
   relationship_type: RelationshipType
+  /** relationship_type='custom'일 때 사용자가 입력한 라벨 */
+  relationship_label: string | null
   /** 휴대폰 번호 (저장 형식: 숫자만 또는 하이픈 포함, 사용 시 포매팅) */
   phone_number: string | null
   /**
@@ -102,6 +104,12 @@ export interface GuestReminder {
   repeat_rule: ReminderRepeat
   channel: ReminderChannel
   status: ReminderStatus
+  /** 짧은 제목 (예: "민호 결혼식") */
+  title: string | null
+  /** 일정 장소 */
+  location: string | null
+  /** 함께하는 사람들 (메인 person_id 외) */
+  co_person_ids: string[]
   message: string | null
   completed_at: string | null
   created_at: string

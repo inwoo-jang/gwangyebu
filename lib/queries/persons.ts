@@ -12,6 +12,9 @@ import type {
   Reminder,
   Note,
   RelationshipScore,
+  EventRecord,
+  Gift,
+  Loan,
 } from "@/lib/supabase/types"
 
 export interface PersonListItem extends Person {
@@ -53,7 +56,14 @@ export async function fetchPersonsForList(
   if (opts.query && opts.query.trim().length > 0) {
     const safe = opts.query.replace(/[%_]/g, "\\$&")
     q = q.or(
-      `name.ilike.%${safe}%,memo.ilike.%${safe}%,how_we_met.ilike.%${safe}%`,
+      [
+        `name.ilike.%${safe}%`,
+        `nickname.ilike.%${safe}%`,
+        `kakao_nickname.ilike.%${safe}%`,
+        `instagram_handle.ilike.%${safe}%`,
+        `memo.ilike.%${safe}%`,
+        `how_we_met.ilike.%${safe}%`,
+      ].join(","),
     )
   }
 
@@ -146,6 +156,9 @@ export async function fetchPersonDetail(personId: string): Promise<{
   notes: Note[]
   score: RelationshipScore | null
   upcomingReminder: Reminder | null
+  events: EventRecord[]
+  gifts: Gift[]
+  loans: Loan[]
 } | null> {
   const supabase = await createClient()
   const {
@@ -169,6 +182,9 @@ export async function fetchPersonDetail(personId: string): Promise<{
     { data: notes },
     { data: score },
     { data: reminder },
+    { data: events },
+    { data: gifts },
+    { data: loans },
   ] = await Promise.all([
     supabase
       .from("person_tags")
@@ -199,6 +215,21 @@ export async function fetchPersonDetail(personId: string): Promise<{
       .order("scheduled_at", { ascending: true })
       .limit(1)
       .maybeSingle<Reminder>(),
+    supabase
+      .from("events")
+      .select("*")
+      .eq("person_id", personId)
+      .order("occurred_at", { ascending: false }),
+    supabase
+      .from("gifts")
+      .select("*")
+      .eq("person_id", personId)
+      .order("occurred_at", { ascending: false }),
+    supabase
+      .from("loans")
+      .select("*")
+      .eq("person_id", personId)
+      .order("occurred_at", { ascending: false }),
   ])
 
   const tags: Pick<Tag, "id" | "name" | "color">[] = []
@@ -220,6 +251,9 @@ export async function fetchPersonDetail(personId: string): Promise<{
     notes: (notes ?? []) as Note[],
     score: (score as RelationshipScore | null) ?? null,
     upcomingReminder: (reminder as Reminder | null) ?? null,
+    events: (events ?? []) as EventRecord[],
+    gifts: (gifts ?? []) as Gift[],
+    loans: (loans ?? []) as Loan[],
   }
 }
 

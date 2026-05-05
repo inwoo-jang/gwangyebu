@@ -2,20 +2,15 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { useSearchParams } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Plus, Cake, ChevronLeft, ChevronRight } from "lucide-react"
 import { toast } from "sonner"
-import { AppShell } from "@/components/layout/app-shell"
-import { AppHeader } from "@/components/layout/app-header"
 import { Button } from "@/components/ui/button"
 import { EmptyState } from "@/components/common/empty-state"
 import { ExchangeCard } from "@/components/relationship/exchange-card"
 import { ExchangeForm } from "@/components/relationship/exchange-form"
 import { CollapsibleSection } from "@/components/ui/collapsible-section"
 import { PersonSelect } from "@/components/relationship/person-select"
-import { useGuestStore } from "@/lib/guest/store"
-import { useGuestHydrated } from "@/lib/guest/use-hydrated"
-import { GuestLoading } from "@/components/guest/guest-loading"
 import { ProfileAvatar } from "@/components/relationship/profile-avatar"
 import { formatKRW } from "@/lib/format/money"
 import { fullDateKo } from "@/lib/format/date"
@@ -24,11 +19,19 @@ import {
   findUpcomingBirthdays,
 } from "@/lib/birthday"
 import { cn } from "@/lib/utils"
+import {
+  createEvent,
+  createGift,
+  createLoan,
+  markLoanReturned,
+  updateGift,
+} from "@/lib/actions/exchange"
 import type {
-  GuestEvent,
-  GuestGift,
-  GuestLoan,
-} from "@/lib/guest/types"
+  EventRecord,
+  Gift,
+  Loan,
+  Person,
+} from "@/lib/supabase/types"
 
 type Tab = "event" | "gift" | "loan"
 
@@ -38,85 +41,81 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "loan", label: "대여" },
 ]
 
-export function GuestRecords() {
-  const hydrated = useGuestHydrated()
-  const persons = useGuestStore((s) => s.persons)
-  const events = useGuestStore((s) => s.events)
-  const gifts = useGuestStore((s) => s.gifts)
-  const loans = useGuestStore((s) => s.loans)
-  const searchParams = useSearchParams()
+interface RecordsTabsProps {
+  persons: Person[]
+  events: EventRecord[]
+  gifts: Gift[]
+  loans: Loan[]
+}
 
+function ymd(iso: string): string {
+  return iso.length >= 10 ? iso.slice(0, 10) : iso
+}
+
+export function RecordsTabs({ persons, events, gifts, loans }: RecordsTabsProps) {
+  const searchParams = useSearchParams()
   const urlTab = searchParams.get("tab")
   const urlAdd = searchParams.get("add")
   const normalizedTab: Tab =
     urlTab === "gift" || urlTab === "loan" || urlTab === "event"
       ? urlTab
       : "event"
-
   const [tab, setTab] = React.useState<Tab>(normalizedTab)
+
+  // URL 변경(예: + FAB로 같은 페이지 다른 탭/add) 시 동기화
   React.useEffect(() => {
     setTab(normalizedTab)
   }, [normalizedTab])
 
-  // ?add=1 들어올 때마다 카운터 증가 → 자식 어더 오픈
+  // ?add=1 이 들어올 때마다 카운터 증가 → 자식이 effect로 어더 자동 오픈
   const [openSeq, setOpenSeq] = React.useState(0)
   React.useEffect(() => {
     if (urlAdd === "1") setOpenSeq((s) => s + 1)
   }, [urlAdd, normalizedTab])
 
-  if (!hydrated) {
-    return <GuestLoading title="기록" />
-  }
-
   return (
-    <AppShell header={<AppHeader title="주고받은 기록" />}>
-      <div className="space-y-4">
-        <div role="tablist" aria-label="카테고리" className="flex gap-1.5">
-          {TABS.map((t) => (
-            <button
-              key={t.id}
-              role="tab"
-              aria-selected={tab === t.id}
-              onClick={() => setTab(t.id)}
-              className={cn(
-                "flex-1 h-9 rounded-full border text-xs font-medium tap",
-                tab === t.id
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-border bg-card text-muted-foreground",
-              )}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
-
-        {tab === "event" ? (
-          <EventTab
-            persons={persons}
-            events={events}
-            openSeq={tab === "event" ? openSeq : 0}
-          />
-        ) : tab === "gift" ? (
-          <GiftTab
-            persons={persons}
-            gifts={gifts}
-            openSeq={tab === "gift" ? openSeq : 0}
-          />
-        ) : (
-          <LoanTab
-            persons={persons}
-            loans={loans}
-            openSeq={tab === "loan" ? openSeq : 0}
-          />
-        )}
+    <div className="space-y-4">
+      <div role="tablist" aria-label="카테고리" className="flex gap-1.5">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            role="tab"
+            aria-selected={tab === t.id}
+            onClick={() => setTab(t.id)}
+            className={cn(
+              "flex-1 h-9 rounded-full border text-xs font-medium tap",
+              tab === t.id
+                ? "border-primary bg-primary text-primary-foreground"
+                : "border-border bg-card text-muted-foreground",
+            )}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
-    </AppShell>
+
+      {tab === "event" ? (
+        <EventTab
+          persons={persons}
+          events={events}
+          openSeq={tab === "event" ? openSeq : 0}
+        />
+      ) : tab === "gift" ? (
+        <GiftTab
+          persons={persons}
+          gifts={gifts}
+          openSeq={tab === "gift" ? openSeq : 0}
+        />
+      ) : (
+        <LoanTab
+          persons={persons}
+          loans={loans}
+          openSeq={tab === "loan" ? openSeq : 0}
+        />
+      )}
+    </div>
   )
 }
-
-/* ============================================================
- * 경조사 탭 — 월별/연별 합계 + 카드 리스트
- * ============================================================ */
 
 type Period = "month" | "year" | "all"
 
@@ -125,21 +124,25 @@ function EventTab({
   events,
   openSeq,
 }: {
-  persons: import("@/lib/guest/types").GuestPerson[]
-  events: GuestEvent[]
+  persons: Person[]
+  events: EventRecord[]
   openSeq: number
 }) {
-  const addEvent = useGuestStore((s) => s.addEvent)
+  const router = useRouter()
   const [period, setPeriod] = React.useState<Period>("month")
   const [cursor, setCursor] = React.useState<Date>(new Date())
   const [personFilter, setPersonFilter] = React.useState<string>("")
   const [adderOpen, setAdderOpen] = React.useState(false)
   const [adderPersonId, setAdderPersonId] = React.useState<string>("")
+  const [pending, startTransition] = React.useTransition()
   const adderRef = React.useRef<HTMLDivElement>(null)
 
+  // openSeq 증가 시 어더 오픈 (탭 전환 후 + 같은 카테고리 재진입 모두 처리)
   React.useEffect(() => {
     if (openSeq > 0) setAdderOpen(true)
   }, [openSeq])
+
+  // 어더가 열리거나 다시 열릴 때마다 화면 가운데로 스크롤
   React.useEffect(() => {
     if (adderOpen) {
       adderRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
@@ -176,9 +179,10 @@ function EventTab({
     let received = 0
     let sent = 0
     for (const e of filtered) {
-      if (e.amount == null) continue
-      if (e.direction === "received") received += e.amount
-      else if (e.direction === "sent") sent += e.amount
+      if (e.amount_paid == null) continue
+      // attended === false: 받음, true: 보냄(우리가 참석)
+      if (e.attended === false) received += e.amount_paid
+      else sent += e.amount_paid
     }
     return { received, sent, count: filtered.length }
   }, [filtered])
@@ -225,13 +229,23 @@ function EventTab({
             </button>
           </div>
         ) : (
-          <span className="ml-auto text-xs text-muted-foreground">전체 기간</span>
+          <span className="ml-auto text-xs text-muted-foreground">
+            전체 기간
+          </span>
         )}
       </div>
 
       <section className="grid grid-cols-2 gap-2">
-        <SummaryCell label="받은 합계" value={summary.received} tone="text-success" />
-        <SummaryCell label="보낸 합계" value={summary.sent} tone="text-destructive" />
+        <SummaryCell
+          label="받은 합계"
+          value={summary.received}
+          tone="text-success"
+        />
+        <SummaryCell
+          label="보낸 합계"
+          value={summary.sent}
+          tone="text-destructive"
+        />
       </section>
 
       {persons.length > 0 ? (
@@ -254,6 +268,7 @@ function EventTab({
         variant="outline"
         onClick={() => setAdderOpen(true)}
         className="gap-1.5 w-full"
+        disabled={persons.length === 0}
       >
         <Plus className="h-3.5 w-3.5" />
         경조사 추가
@@ -289,18 +304,24 @@ function EventTab({
                 toast.error("인물을 먼저 선택해 주세요")
                 return
               }
-              addEvent({
-                person_id: adderPersonId,
-                event_type: v.event_type,
-                occurred_at: v.occurred_at,
-                amount: v.amount,
-                direction: v.direction,
-                attended: v.attended,
-                location: v.location || null,
-                memo: v.memo || null,
+              startTransition(async () => {
+                const res = await createEvent({
+                  person_id: adderPersonId,
+                  event_type: v.event_type,
+                  occurred_at: ymd(v.occurred_at),
+                  location: v.location || null,
+                  attended: v.direction === "received" ? false : true,
+                  amount_paid: v.amount,
+                  memo: v.memo || null,
+                })
+                if (res.ok) {
+                  toast.success("경조사가 기록됐어요")
+                  setAdderOpen(false)
+                  router.refresh()
+                } else {
+                  toast.error(res.error.message)
+                }
               })
-              toast.success("경조사가 기록됐어요")
-              setAdderOpen(false)
             }}
           />
         </section>
@@ -320,9 +341,9 @@ function EventTab({
               data={{
                 id: e.id,
                 kind: "event",
-                flow: e.direction === "received" ? "received" : "sent",
+                flow: e.attended === false ? "received" : "sent",
                 occasion: e.event_type,
-                amount: e.amount,
+                amount: e.amount_paid,
                 itemName: null,
                 occurredAt: e.occurred_at,
                 returnedAt: null,
@@ -334,6 +355,9 @@ function EventTab({
           ))}
         </div>
       )}
+      {pending ? (
+        <p className="text-[11px] text-muted-foreground">처리 중...</p>
+      ) : null}
     </div>
   )
 }
@@ -371,25 +395,23 @@ function PeriodToggle({
   )
 }
 
-/* ============================================================
- * 선물 탭 — 임박 생일 알림 + 카드 리스트 (금액 X)
- * ============================================================ */
-
 function GiftTab({
   persons,
   gifts,
   openSeq,
 }: {
-  persons: import("@/lib/guest/types").GuestPerson[]
-  gifts: GuestGift[]
+  persons: Person[]
+  gifts: Gift[]
   openSeq: number
 }) {
-  const addGift = useGuestStore((s) => s.addGift)
-  const updateGift = useGuestStore((s) => s.updateGift)
+  const router = useRouter()
   const [adderOpen, setAdderOpen] = React.useState(false)
   const [adderPersonId, setAdderPersonId] = React.useState<string>("")
-  const [filter, setFilter] = React.useState<"all" | "sent" | "received">("all")
+  const [filter, setFilter] = React.useState<"all" | "sent" | "received">(
+    "all",
+  )
   const [personFilter, setPersonFilter] = React.useState<string>("")
+  const [pending, startTransition] = React.useTransition()
   const adderRef = React.useRef<HTMLDivElement>(null)
 
   React.useEffect(() => {
@@ -428,13 +450,11 @@ function GiftTab({
   const counts = React.useMemo(() => {
     let sent = 0
     let received = 0
-    let notified = 0
     for (const g of filtered) {
       if (g.direction === "sent") sent += 1
       else received += 1
-      if (g.notified_at) notified += 1
     }
-    return { sent, received, notified, total: filtered.length }
+    return { sent, received, total: filtered.length }
   }, [filtered])
 
   return (
@@ -479,7 +499,8 @@ function GiftTab({
                     {u.hasGiftHistory ? (
                       <>
                         <span className="mx-1">·</span>
-                        주고받은 사람 (받음 {u.receivedCount} / 보냄 {u.sentCount})
+                        주고받은 사람 (받음 {u.receivedCount} / 보냄{" "}
+                        {u.sentCount})
                       </>
                     ) : (
                       <>
@@ -506,10 +527,18 @@ function GiftTab({
         </CollapsibleSection>
       ) : null}
 
-      <CollapsibleSection title="통계" defaultOpen={false} meta={`${counts.total}건`}>
+      <CollapsibleSection
+        title="통계"
+        defaultOpen={false}
+        meta={`${counts.total}건`}
+      >
         <div className="grid grid-cols-3 gap-2">
           <CountCell label="총 건수" value={counts.total} />
-          <CountCell label="보냄" value={counts.sent} tone="text-destructive" />
+          <CountCell
+            label="보냄"
+            value={counts.sent}
+            tone="text-destructive"
+          />
           <CountCell label="받음" value={counts.received} tone="text-success" />
         </div>
       </CollapsibleSection>
@@ -552,6 +581,7 @@ function GiftTab({
         variant="outline"
         onClick={() => setAdderOpen(true)}
         className="gap-1.5 w-full"
+        disabled={persons.length === 0}
       >
         <Plus className="h-3.5 w-3.5" />
         선물 추가
@@ -587,20 +617,25 @@ function GiftTab({
                 toast.error("인물을 먼저 선택해 주세요")
                 return
               }
-              addGift({
-                person_id: adderPersonId,
-                direction: v.direction,
-                kind: v.kind,
-                amount: v.amount,
-                item_name: v.item_name || null,
-                occasion: v.occasion || null,
-                occurred_at: v.occurred_at,
-                notified_at: v.notified_at,
-                linked_event_id: null,
-                memo: v.memo || null,
+              startTransition(async () => {
+                const res = await createGift({
+                  person_id: adderPersonId,
+                  direction: v.direction,
+                  kind: v.kind,
+                  amount: v.amount,
+                  item_name: v.item_name || null,
+                  occurred_at: ymd(v.occurred_at),
+                  reason: v.occasion || null,
+                  notified_at: v.notified_at,
+                })
+                if (res.ok) {
+                  toast.success("선물이 기록됐어요")
+                  setAdderOpen(false)
+                  router.refresh()
+                } else {
+                  toast.error(res.error.message)
+                }
               })
-              toast.success("선물이 기록됐어요")
-              setAdderOpen(false)
             }}
           />
         </section>
@@ -615,60 +650,66 @@ function GiftTab({
       ) : (
         <div className="space-y-2">
           {filtered.map((g) => (
-            <div key={g.id} className="space-y-1">
-              <ExchangeCard
-                data={{
-                  id: g.id,
-                  kind: "gift",
-                  flow: g.direction,
-                  occasion: g.occasion,
-                  amount: g.amount,
-                  itemName: g.item_name,
-                  occurredAt: g.occurred_at,
-                  returnedAt: null,
-                  dueAt: null,
-                  notifiedAt: g.notified_at,
-                  memo: g.memo,
-                  personName: personIndex.get(g.person_id)?.name,
-                }}
-                onMore={
-                  g.notified_at
-                    ? undefined
-                    : () => {
-                        updateGift(g.id, {
+            <ExchangeCard
+              key={g.id}
+              data={{
+                id: g.id,
+                kind: "gift",
+                flow: g.direction,
+                occasion: g.reason,
+                amount: g.amount,
+                itemName: g.item_name,
+                occurredAt: g.occurred_at,
+                returnedAt: null,
+                dueAt: null,
+                notifiedAt: g.notified_at,
+                memo: null,
+                personName: personIndex.get(g.person_id)?.name,
+              }}
+              onMore={
+                g.notified_at
+                  ? undefined
+                  : () => {
+                      startTransition(async () => {
+                        const res = await updateGift({
+                          id: g.id,
                           notified_at: new Date().toISOString(),
                         })
-                        toast.success("준비 메시지 보냄으로 기록됨")
-                      }
-                }
-              />
-            </div>
+                        if (res.ok) {
+                          toast.success("준비 메시지 보냄으로 기록됨")
+                          router.refresh()
+                        } else {
+                          toast.error(res.error.message)
+                        }
+                      })
+                    }
+              }
+            />
           ))}
         </div>
       )}
+      {pending ? (
+        <p className="text-[11px] text-muted-foreground">처리 중...</p>
+      ) : null}
     </div>
   )
 }
-
-/* ============================================================
- * 대여 탭 — 미회수 합계 + 카드 리스트
- * ============================================================ */
 
 function LoanTab({
   persons,
   loans,
   openSeq,
 }: {
-  persons: import("@/lib/guest/types").GuestPerson[]
-  loans: GuestLoan[]
+  persons: Person[]
+  loans: Loan[]
   openSeq: number
 }) {
-  const addLoan = useGuestStore((s) => s.addLoan)
-  const markLoanReturned = useGuestStore((s) => s.markLoanReturned)
+  const router = useRouter()
   const [adderOpen, setAdderOpen] = React.useState(false)
   const [adderPersonId, setAdderPersonId] = React.useState<string>("")
   const [filter, setFilter] = React.useState<"open" | "all">("open")
   const [personFilter, setPersonFilter] = React.useState<string>("")
+  const [pending, startTransition] = React.useTransition()
   const adderRef = React.useRef<HTMLDivElement>(null)
 
   React.useEffect(() => {
@@ -783,6 +824,7 @@ function LoanTab({
         variant="outline"
         onClick={() => setAdderOpen(true)}
         className="gap-1.5 w-full"
+        disabled={persons.length === 0}
       >
         <Plus className="h-3.5 w-3.5" />
         대여/대출 추가
@@ -818,16 +860,23 @@ function LoanTab({
                 toast.error("인물을 먼저 선택해 주세요")
                 return
               }
-              addLoan({
-                person_id: adderPersonId,
-                direction: v.direction,
-                amount: v.amount,
-                occurred_at: v.occurred_at,
-                due_at: v.due_at,
-                memo: v.memo || null,
+              startTransition(async () => {
+                const res = await createLoan({
+                  person_id: adderPersonId,
+                  direction: v.direction,
+                  amount: v.amount,
+                  occurred_at: ymd(v.occurred_at),
+                  due_at: v.due_at ? ymd(v.due_at) : null,
+                  memo: v.memo || null,
+                })
+                if (res.ok) {
+                  toast.success("대여가 기록됐어요")
+                  setAdderOpen(false)
+                  router.refresh()
+                } else {
+                  toast.error(res.error.message)
+                }
               })
-              toast.success("대여가 기록됐어요")
-              setAdderOpen(false)
             }}
           />
         </section>
@@ -865,21 +914,31 @@ function LoanTab({
                 l.returned_at
                   ? undefined
                   : () => {
-                      markLoanReturned(l.id)
-                      toast.success("회수 처리되었어요")
+                      startTransition(async () => {
+                        const today = new Date().toISOString().slice(0, 10)
+                        const res = await markLoanReturned({
+                          id: l.id,
+                          returned_at: today,
+                        })
+                        if (res.ok) {
+                          toast.success("회수 처리되었어요")
+                          router.refresh()
+                        } else {
+                          toast.error(res.error.message)
+                        }
+                      })
                     }
               }
             />
           ))}
         </div>
       )}
+      {pending ? (
+        <p className="text-[11px] text-muted-foreground">처리 중...</p>
+      ) : null}
     </div>
   )
 }
-
-/* ============================================================
- * 공통 셀
- * ============================================================ */
 
 function SummaryCell({
   label,
@@ -918,4 +977,3 @@ function CountCell({
     </div>
   )
 }
-

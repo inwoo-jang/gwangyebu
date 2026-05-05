@@ -29,7 +29,9 @@ import {
   Tag as TagIcon,
   Loader2,
   HelpCircle,
+  Settings as SettingsIcon,
 } from "lucide-react"
+import { GuestTagManageButton } from "@/components/guest/guest-tag-manage-button"
 import { Input } from "@/components/ui/input"
 import { CollapsibleSection } from "@/components/ui/collapsible-section"
 import {
@@ -520,6 +522,20 @@ export function GuestHome() {
                   태그 필터 초기화
                 </button>
               ) : null}
+              {!selectMode ? (
+                <GuestTagManageButton
+                  trigger={
+                    <button
+                      type="button"
+                      aria-label="태그 관리"
+                      className="inline-flex items-center gap-0.5 text-[11px] text-muted-foreground hover:text-foreground hover:underline"
+                    >
+                      <SettingsIcon className="h-3 w-3" />
+                      태그 관리
+                    </button>
+                  }
+                />
+              ) : null}
               <button
                 type="button"
                 className={cn(
@@ -649,6 +665,7 @@ export function GuestHome() {
                         profileIndex: p.profile_index,
                         avatarBg: p.avatar_bg,
                         relationshipType: p.relationship_type,
+                        relationshipLabel: p.relationship_label,
                         mbti: p.mbti,
                         lastContactAt: p.last_contact_at,
                         lastContactChannel: null,

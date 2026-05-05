@@ -58,44 +58,53 @@
   }
 
   .dark {
-    --background: 20 14% 6%;
-    --foreground: 30 10% 96%;
-    --card: 20 14% 9%;
-    --card-foreground: 30 10% 96%;
-    --popover: 20 14% 9%;
-    --popover-foreground: 30 10% 96%;
+    /* 베이스: 진하지만 너무 어둡지 않게 (#121110 근방) */
+    --background: 20 12% 7%;
+    --foreground: 30 14% 96%;
 
-    --primary: 12 78% 64%;
-    --primary-foreground: 0 0% 100%;
+    /* 카드: 배경 대비 +5% 명도 → 카드 경계 확실 */
+    --card: 20 14% 12%;
+    --card-foreground: 30 14% 96%;
+    --popover: 20 14% 13%;
+    --popover-foreground: 30 14% 96%;
 
-    --secondary: 20 8% 18%;
-    --secondary-foreground: 30 10% 92%;
+    /* primary: 채도 약간 ↓, 명도 ↑ → 눈 부담 ↓ */
+    --primary: 12 72% 66%;
+    --primary-foreground: 20 14% 8%;
 
-    --muted: 20 6% 14%;
-    --muted-foreground: 30 6% 64%;
+    /* secondary/accent: 명도 ↑ → 카드와 구별 */
+    --secondary: 20 10% 22%;
+    --secondary-foreground: 30 14% 94%;
 
-    --accent: 20 14% 22%;
-    --accent-foreground: 30 10% 92%;
+    --muted: 20 8% 16%;
+    /* 보조 텍스트 — 64% → 72% (대비 강화) */
+    --muted-foreground: 30 8% 72%;
 
-    --destructive: 0 65% 60%;
+    --accent: 20 14% 26%;
+    --accent-foreground: 30 14% 94%;
+
+    /* 상태 색: 다크에서 명도 ↑ → 인지 잘 됨 */
+    --destructive: 0 70% 66%;
     --destructive-foreground: 0 0% 100%;
-    --success: 145 35% 55%;
-    --success-foreground: 0 0% 100%;
-    --warning: 38 80% 60%;
-    --warning-foreground: 20 14% 12%;
+    --success: 145 42% 62%;
+    --success-foreground: 20 14% 8%;
+    --warning: 38 82% 66%;
+    --warning-foreground: 20 14% 8%;
 
-    --border: 20 8% 22%;
-    --input: 20 8% 22%;
-    --ring: 12 78% 64%;
+    /* 테두리/입력: 22 → 30 (카드 경계 명확) */
+    --border: 20 8% 30%;
+    --input: 20 8% 30%;
+    --ring: 12 72% 66%;
 
-    --tag-1: 12 50% 55%;
-    --tag-2: 38 60% 55%;
-    --tag-3: 145 25% 50%;
-    --tag-4: 200 25% 50%;
-    --tag-5: 245 30% 60%;
-    --tag-6: 295 30% 60%;
-    --tag-7: 350 30% 60%;
-    --tag-8: 38 25% 55%;
+    /* 태그: 다크 배경에서 살아나도록 채도/명도 ↑ */
+    --tag-1: 12 60% 65%;
+    --tag-2: 38 65% 62%;
+    --tag-3: 145 35% 58%;
+    --tag-4: 200 38% 60%;
+    --tag-5: 245 40% 70%;
+    --tag-6: 295 38% 70%;
+    --tag-7: 350 40% 70%;
+    --tag-8: 38 30% 65%;
   }
 }
 
@@ -143,6 +152,7 @@
   .safe-top {
     padding-top: env(safe-area-inset-top);
   }
+
 }
 
 @media (hover: hover) {
