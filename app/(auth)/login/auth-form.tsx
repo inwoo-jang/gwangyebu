@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { ArrowRight, Check, Loader2, X as XIcon } from "lucide-react"
+import { ArrowRight, Check, Eye, EyeOff, Loader2, X as XIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -30,6 +30,8 @@ export function AuthForm({ next }: AuthFormProps) {
   const [passwordConfirm, setPasswordConfirm] = React.useState("")
   const [nickname, setNickname] = React.useState("")
   const [check, setCheck] = React.useState<CheckState>({ kind: "idle" })
+  const [showPassword, setShowPassword] = React.useState(false)
+  const [showPasswordConfirm, setShowPasswordConfirm] = React.useState(false)
 
   const isSignup = mode === "signup"
   const passwordsMatch =
@@ -147,17 +149,34 @@ export function AuthForm({ next }: AuthFormProps) {
 
         <div className="space-y-1.5">
           <Label htmlFor="password">비밀번호</Label>
-          <Input
-            id="password"
-            type="password"
-            name="password"
-            required
-            minLength={6}
-            autoComplete={isSignup ? "new-password" : "current-password"}
-            placeholder={isSignup ? "6자 이상" : "비밀번호"}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
+          <div className="relative">
+            <Input
+              id="password"
+              type={showPassword ? "text" : "password"}
+              name="password"
+              required
+              minLength={6}
+              autoComplete={isSignup ? "new-password" : "current-password"}
+              placeholder={isSignup ? "6자 이상" : "비밀번호"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="pr-9"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((v) => !v)}
+              aria-label={showPassword ? "비밀번호 가리기" : "비밀번호 보기"}
+              aria-pressed={showPassword}
+              tabIndex={-1}
+              className="absolute right-2 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
+            >
+              {showPassword ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
+            </button>
+          </div>
           {passwordTooShort ? (
             <p className="text-[11px] text-warning">
               비밀번호는 6자 이상이어야 해요.
@@ -168,20 +187,39 @@ export function AuthForm({ next }: AuthFormProps) {
         {isSignup ? (
           <div className="space-y-1.5">
             <Label htmlFor="passwordConfirm">비밀번호 확인</Label>
-            <Input
-              id="passwordConfirm"
-              type="password"
-              required
-              autoComplete="new-password"
-              placeholder="다시 한 번 입력"
-              value={passwordConfirm}
-              onChange={(e) => setPasswordConfirm(e.target.value)}
-              className={cn(
-                passwordConfirm.length > 0 &&
-                  !passwordsMatch &&
-                  "border-destructive",
-              )}
-            />
+            <div className="relative">
+              <Input
+                id="passwordConfirm"
+                type={showPasswordConfirm ? "text" : "password"}
+                required
+                autoComplete="new-password"
+                placeholder="다시 한 번 입력"
+                value={passwordConfirm}
+                onChange={(e) => setPasswordConfirm(e.target.value)}
+                className={cn(
+                  "pr-9",
+                  passwordConfirm.length > 0 &&
+                    !passwordsMatch &&
+                    "border-destructive",
+                )}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPasswordConfirm((v) => !v)}
+                aria-label={
+                  showPasswordConfirm ? "비밀번호 가리기" : "비밀번호 보기"
+                }
+                aria-pressed={showPasswordConfirm}
+                tabIndex={-1}
+                className="absolute right-2 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
+              >
+                {showPasswordConfirm ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </button>
+            </div>
             {passwordConfirm.length > 0 && !passwordsMatch ? (
               <p className="text-[11px] text-destructive">
                 비밀번호가 일치하지 않아요.
