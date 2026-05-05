@@ -135,7 +135,7 @@ export default async function PersonDetailPage({
         <ReminderCreateForm personId={person.id} />
         <AnalyzeButton personId={person.id} />
         <Button asChild variant="ghost" disabled className="opacity-60">
-          <span>🎁 경조사 (M2)</span>
+          <span>🎁 경조사</span>
         </Button>
       </section>
 

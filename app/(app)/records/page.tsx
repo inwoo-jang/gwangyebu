@@ -15,8 +15,8 @@ export default async function RecordsPage() {
     <AppShell header={<AppHeader title="주고받은 기록" />}>
       <EmptyState
         icon="🎁"
-        title="기록 (M2)"
-        description="경조사·선물·대여 통합 관리 — 인증 모드는 추후 마이그레이션 후 활성화됩니다. 지금은 게스트 모드에서 사용해보세요."
+        title="기록이 없어요"
+        description="경조사, 선물, 금전 대여 내역 등을 추가해보세요."
       />
     </AppShell>
   )

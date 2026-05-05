@@ -14,6 +14,14 @@ const credentialsSchema = z.object({
   next: z.string().optional(),
 })
 
+const signUpSchema = credentialsSchema.extend({
+  nickname: z
+    .string()
+    .trim()
+    .min(1, "닉네임을 입력해 주세요")
+    .max(30, "닉네임은 30자 이하여야 해요"),
+})
+
 function safeNext(next?: string): string {
   if (!next) return "/"
   return next.startsWith("/") ? next : "/"
@@ -23,15 +31,23 @@ function safeNext(next?: string): string {
 export async function signUpAction(input: {
   email: string
   password: string
+  nickname: string
   next?: string
 }): Promise<ActionResult<{ created: true }>> {
-  const parsed = credentialsSchema.safeParse(input)
+  const parsed = signUpSchema.safeParse(input)
   if (!parsed.success) return fromZod(parsed.error)
 
   const supabase = await createClient()
   const { error } = await supabase.auth.signUp({
     email: parsed.data.email,
     password: parsed.data.password,
+    options: {
+      // user_metadata로 전달 → public.handle_new_user 트리거가 display_name으로 사용
+      data: {
+        display_name: parsed.data.nickname,
+        name: parsed.data.nickname,
+      },
+    },
   })
 
   if (error) return fail({ code: "internal", message: error.message })
@@ -61,6 +77,7 @@ export async function signUp(formData: FormData): Promise<void> {
   const result = await signUpAction({
     email: String(formData.get("email") ?? ""),
     password: String(formData.get("password") ?? ""),
+    nickname: String(formData.get("nickname") ?? ""),
     next: formData.get("next") ? String(formData.get("next")) : undefined,
   })
   if (result.ok) {

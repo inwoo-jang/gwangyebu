@@ -82,7 +82,7 @@ export default async function SettingsPage() {
         </section>
 
         <p className="pb-4 text-center text-xs text-muted-foreground">
-          관계부 v0.1 · M1 베타
+          관계부 v0.1 · 베타
         </p>
       </div>
     </AppShell>

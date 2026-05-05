@@ -28,6 +28,7 @@ export function AuthForm({ next }: AuthFormProps) {
   const [email, setEmail] = React.useState("")
   const [password, setPassword] = React.useState("")
   const [passwordConfirm, setPasswordConfirm] = React.useState("")
+  const [nickname, setNickname] = React.useState("")
   const [check, setCheck] = React.useState<CheckState>({ kind: "idle" })
 
   const isSignup = mode === "signup"
@@ -36,7 +37,8 @@ export function AuthForm({ next }: AuthFormProps) {
   const passwordTooShort = isSignup && password.length > 0 && password.length < 6
   const canSubmit =
     !isSignup ||
-    (password.length >= 6 &&
+    (nickname.trim().length > 0 &&
+      password.length >= 6 &&
       password === passwordConfirm &&
       check.kind !== "taken" &&
       check.kind !== "checking")
@@ -126,6 +128,22 @@ export function AuthForm({ next }: AuthFormProps) {
             </p>
           ) : null}
         </div>
+
+        {isSignup ? (
+          <div className="space-y-1.5">
+            <Label htmlFor="nickname">닉네임</Label>
+            <Input
+              id="nickname"
+              name="nickname"
+              required
+              maxLength={30}
+              autoComplete="nickname"
+              placeholder="앱에서 부를 이름"
+              value={nickname}
+              onChange={(e) => setNickname(e.target.value)}
+            />
+          </div>
+        ) : null}
 
         <div className="space-y-1.5">
           <Label htmlFor="password">비밀번호</Label>

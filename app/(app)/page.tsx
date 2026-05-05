@@ -62,11 +62,10 @@ export default async function HomePage() {
         <div className="rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/10 to-accent/40 p-4">
           <div className="flex items-center gap-2 text-primary">
             <Sparkles className="h-4 w-4" />
-            <h3 className="text-sm font-semibold">AI 추천 (M1 기본)</h3>
+            <h3 className="text-sm font-semibold">시작하기</h3>
           </div>
           <p className="mt-2 text-sm text-foreground/80">
-            인물 5명 이상 + 연락 기록 누적 시 매주 월요일 추천 카드를
-            준비해드려요. 인물 상세에서 분석을 직접 시작할 수도 있어요.
+            인맥을 추가하고 연락·기록을 쌓으면 관계 건강도가 자동으로 잡혀요.
           </p>
           <div className="mt-3 flex gap-2">
             <Button asChild size="sm" variant="outline">

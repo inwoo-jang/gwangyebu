@@ -90,7 +90,7 @@ export function SettingsForm({ initial, envDefaultProvider }: SettingsFormProps)
         />
         <Toggle
           id="notif-events"
-          label="경조사 알림 (M2)"
+          label="경조사 알림"
           checked={eventsAlerts}
           onChange={setEventsAlerts}
         />
