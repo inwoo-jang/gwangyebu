@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   applicationName: APP_NAME,
   title: {
     default: APP_NAME,
-    template: `%s | ${APP_NAME}`,
+    template: `${APP_NAME} | %s`,
   },
   description: APP_DESCRIPTION,
   manifest: "/manifest.json",
