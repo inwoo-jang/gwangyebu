@@ -13,18 +13,16 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const next = sp.next ?? "/"
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-6 px-6 py-12">
-      <header className="space-y-3 text-center">
+    <main className="mx-auto flex min-h-dvh max-w-sm flex-col gap-5 px-5 py-8 sm:justify-center sm:py-12">
+      <header className="space-y-2 text-center">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/logo.png"
           alt="관계부"
-          className="mx-auto w-full max-w-xs object-contain"
+          className="mx-auto w-auto max-w-[180px] object-contain"
         />
-        <p className="text-sm text-muted-foreground">
-          잊지 않게, 흐지부지되지 않게.
-          <br />
-          AI 인맥 비서와 함께 시작하세요.
+        <p className="text-xs text-muted-foreground">
+          잊지 않게, 흐지부지되지 않게 — AI 인맥 비서
         </p>
       </header>
 
