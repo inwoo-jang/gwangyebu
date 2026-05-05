@@ -1,8 +1,9 @@
 import Link from "next/link"
-import { sendMagicLink, signInWithOAuthAction } from "./actions"
+import { sendMagicLink } from "./actions"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { OAuthButtons } from "./oauth-buttons"
 
 export const metadata = { title: "로그인" }
 
@@ -70,25 +71,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         <span className="absolute left-0 top-1/2 h-px w-full bg-border" />
       </div>
 
-      <div className="flex flex-col gap-2">
-        <form action={signInWithOAuthAction}>
-          <input type="hidden" name="provider" value="google" />
-          <input type="hidden" name="next" value={next} />
-          <Button type="submit" variant="outline" className="w-full">
-            Google로 계속하기
-          </Button>
-        </form>
-        <form action={signInWithOAuthAction}>
-          <input type="hidden" name="provider" value="kakao" />
-          <input type="hidden" name="next" value={next} />
-          <button
-            type="submit"
-            className="inline-flex h-10 w-full items-center justify-center rounded-md bg-[#FEE500] px-4 py-2 text-sm font-medium text-[#181600] transition-opacity hover:opacity-90"
-          >
-            카카오로 계속하기
-          </button>
-        </form>
-      </div>
+      <OAuthButtons />
 
       <div className="relative my-1 text-center text-xs text-muted-foreground">
         <span className="relative z-10 bg-background px-2">또는</span>

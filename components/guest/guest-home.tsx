@@ -21,7 +21,15 @@ import {
   describeDaysUntil,
   findUpcomingBirthdays,
 } from "@/lib/birthday"
-import { Cake, Search, X, Sparkles, Tag as TagIcon, Loader2 } from "lucide-react"
+import {
+  Cake,
+  Search,
+  X,
+  Sparkles,
+  Tag as TagIcon,
+  Loader2,
+  HelpCircle,
+} from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { CollapsibleSection } from "@/components/ui/collapsible-section"
 import {
@@ -33,12 +41,21 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { TagChip } from "@/components/relationship/tag-chip"
+import { AnalysisGuideDialog } from "@/components/relationship/analysis-guide-dialog"
 import { analyzePerson } from "@/lib/guest/analyze"
 import { useUiStore } from "@/lib/guest/ui-store"
 import { toast } from "sonner"
 import { fullDateKo } from "@/lib/format/date"
 import type { Reminder } from "@/lib/supabase/types"
 import type { GuestReminder } from "@/lib/guest/types"
+
+type SortKey = "alpha" | "scoreDesc" | "scoreAsc"
+
+const SORT_OPTIONS: { id: SortKey; label: string }[] = [
+  { id: "alpha", label: "가나다순" },
+  { id: "scoreDesc", label: "친밀도 높은순" },
+  { id: "scoreAsc", label: "친밀도 낮은순" },
+]
 
 function variantFor(person: {
   last_contact_at: string | null
@@ -100,6 +117,7 @@ export function GuestHome() {
     () => new Set(),
   )
   const [bulkBusy, setBulkBusy] = React.useState(false)
+  const [analysisGuideOpen, setAnalysisGuideOpen] = React.useState(false)
   const [tagDialogOpen, setTagDialogOpen] = React.useState(false)
   const [tagDialogSelected, setTagDialogSelected] = React.useState<string[]>([])
   const [newDialogTag, setNewDialogTag] = React.useState("")
@@ -189,15 +207,37 @@ export function GuestHome() {
 
   const [query, setQuery] = React.useState<string>("")
   const [showAll, setShowAll] = React.useState<boolean>(false)
+  const [sortKey, setSortKey] = React.useState<SortKey>("alpha")
   const HOME_LIMIT = 30
 
+  const scoreByPerson = React.useMemo(
+    () => new Map(scores.map((s) => [s.person_id, s])),
+    [scores],
+  )
+
   const sortedPersons = React.useMemo(() => {
-    return [...persons].sort((a, b) => {
-      const at = a.last_contact_at ? new Date(a.last_contact_at).getTime() : 0
-      const bt = b.last_contact_at ? new Date(b.last_contact_at).getTime() : 0
-      return at - bt
-    })
-  }, [persons])
+    const arr = [...persons]
+    const scoreOf = (id: string) => scoreByPerson.get(id)?.score ?? null
+    switch (sortKey) {
+      case "scoreDesc":
+      case "scoreAsc": {
+        const dir = sortKey === "scoreDesc" ? -1 : 1
+        return arr.sort((a, b) => {
+          const sa = scoreOf(a.id)
+          const sb = scoreOf(b.id)
+          // 미측정은 항상 마지막
+          if (sa == null && sb == null) return 0
+          if (sa == null) return 1
+          if (sb == null) return -1
+          return (sa - sb) * dir
+        })
+      }
+      case "alpha":
+      default:
+        return arr.sort((a, b) => a.name.localeCompare(b.name, "ko"))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [persons, sortKey, scoreByPerson])
 
   const [activeTagIds, setActiveTagIds] = React.useState<string[]>([])
 
@@ -272,10 +312,6 @@ export function GuestHome() {
   const personById = React.useMemo(
     () => new Map(persons.map((p) => [p.id, p])),
     [persons],
-  )
-  const scoreByPerson = React.useMemo(
-    () => new Map(scores.map((s) => [s.person_id, s])),
-    [scores],
   )
 
   const greeting = settings.display_name
@@ -500,6 +536,28 @@ export function GuestHome() {
             </div>
           </div>
 
+          {/* 정렬 옵션 (선택 모드 아닐 때만) */}
+          {!selectMode ? (
+            <div className="mb-3 -mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1">
+              {SORT_OPTIONS.map((o) => (
+                <button
+                  key={o.id}
+                  type="button"
+                  onClick={() => setSortKey(o.id)}
+                  className={cn(
+                    "shrink-0 rounded-full border px-3 h-7 text-xs tap transition-colors",
+                    sortKey === o.id
+                      ? "border-foreground bg-foreground text-background"
+                      : "border-border bg-card text-muted-foreground hover:bg-accent/30",
+                  )}
+                  aria-pressed={sortKey === o.id}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
+          ) : null}
+
           {/* 태그 필터 칩 (사용된 태그만, 가로 스크롤) */}
           {usedTags.length > 0 ? (
             <div className="mb-3 -mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1">
@@ -544,6 +602,22 @@ export function GuestHome() {
             </div>
           ) : (
             <>
+              {/* 컬럼 헤더 — 카드의 점수 영역과 동일 레이아웃으로 정렬 */}
+              {!selectMode ? (
+                <div className="mb-1 flex items-center gap-3 px-3">
+                  <div className="h-0 w-9 shrink-0" aria-hidden />
+                  <div className="flex-1" aria-hidden />
+                  <button
+                    type="button"
+                    onClick={() => setAnalysisGuideOpen(true)}
+                    className="w-14 shrink-0 inline-flex items-center justify-center gap-0.5 text-[11px] text-muted-foreground hover:text-foreground"
+                    aria-label="관계 분석 기준 보기"
+                  >
+                    친밀도
+                    <HelpCircle className="h-3 w-3" />
+                  </button>
+                </div>
+              ) : null}
               <div className="space-y-1.5">
                 {visiblePersons.map((p) => {
                   const personTagIds = personTags
@@ -644,6 +718,11 @@ export function GuestHome() {
           </div>
         ) : null}
       </AppShell>
+
+      <AnalysisGuideDialog
+        open={analysisGuideOpen}
+        onOpenChange={setAnalysisGuideOpen}
+      />
 
       {/* 일괄 태그 추가 다이얼로그 */}
       <Dialog open={tagDialogOpen} onOpenChange={setTagDialogOpen}>

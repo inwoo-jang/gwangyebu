@@ -3,12 +3,13 @@
 import * as React from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Pencil, Trash2 } from "lucide-react"
+import { Pencil, Trash2, HelpCircle } from "lucide-react"
 import { toast } from "sonner"
 
 import { AppShell } from "@/components/layout/app-shell"
 import { AppHeader } from "@/components/layout/app-header"
 import { ProfileAvatar } from "@/components/relationship/profile-avatar"
+import { AnalysisGuideDialog } from "@/components/relationship/analysis-guide-dialog"
 import { BusinessCardSection } from "@/components/relationship/business-card-section"
 import { ContactActions } from "@/components/relationship/contact-actions"
 import {
@@ -91,6 +92,7 @@ export function GuestPersonDetail({ personId }: { personId: string }) {
   const markLoanReturned = useGuestStore((s) => s.markLoanReturned)
   const setBusinessCard = useGuestStore((s) => s.setBusinessCard)
   const clearBusinessCard = useGuestStore((s) => s.clearBusinessCard)
+  const [analysisGuideOpen, setAnalysisGuideOpen] = React.useState(false)
 
   const person = React.useMemo(
     () => persons.find((p) => p.id === personId),
@@ -362,9 +364,19 @@ export function GuestPersonDetail({ personId }: { personId: string }) {
             toast.success("리마인더를 추가했어요")
           }}
         />
-        <Button variant="outline" size="sm" onClick={handleQuickAnalyze}>
-          ✨ 관계 분석
-        </Button>
+        <div className="inline-flex items-center gap-1">
+          <Button variant="outline" size="sm" onClick={handleQuickAnalyze}>
+            ✨ 관계 분석
+          </Button>
+          <button
+            type="button"
+            onClick={() => setAnalysisGuideOpen(true)}
+            aria-label="관계 분석 기준 보기"
+            className="inline-flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground hover:bg-accent/40 hover:text-foreground"
+          >
+            <HelpCircle className="h-4 w-4" />
+          </button>
+        </div>
       </section>
 
       {(person.phone_number || person.kakao_nickname || person.instagram_handle) ? (
@@ -537,6 +549,11 @@ export function GuestPersonDetail({ personId }: { personId: string }) {
           이 인물 삭제
         </Button>
       </section>
+
+      <AnalysisGuideDialog
+        open={analysisGuideOpen}
+        onOpenChange={setAnalysisGuideOpen}
+      />
     </AppShell>
   )
 }
